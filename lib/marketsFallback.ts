@@ -11,10 +11,11 @@
  * Quotes returned from this fallback ship `source: "seed"` so the UI can
  * surface a small "snapshot" badge for transparency.
  *
- * Sourced from the 5/5/2026 close (S&P 500 closed 7,259.22 +0.81%, Nasdaq
- * 25,326.13 +1.03%, Dow 49,298.25 +0.73% — fresh all-time highs as oil
- * pulled back to $100.61 and AMD popped after-hours on a strong report).
- * Update whenever the market journal advances.
+ * Sourced from the 5/28/2026 close (S&P 500 closed 7,563.62 +0.58%, Nasdaq
+ * 26,917.47 +0.91%, Dow 50,668.97 +0.05% — tech led on Snowflake's best day
+ * ever (+36.5%) and ceasefire optimism, while oil pulled back to $87.78 on
+ * the US-Iran 60-day ceasefire MOU and PCE printed 3.8% YoY, the hottest
+ * since May 2023). Update whenever the market journal advances.
  */
 
 export interface SeedQuote {
@@ -27,42 +28,44 @@ export interface SeedQuote {
 }
 
 export const SEED_QUOTES: Record<string, SeedQuote> = {
-  // ── Indices (5/5/2026 close — fresh all-time highs across the board) ──
-  "^GSPC": { symbol: "^GSPC", shortName: "S&P 500", price: 7259.22, previousClose: 7200.75, currency: "USD", exchange: "SNP" },
-  "^IXIC": { symbol: "^IXIC", shortName: "NASDAQ", price: 25326.13, previousClose: 25067.80, currency: "USD", exchange: "NIM" },
-  "^DJI": { symbol: "^DJI", shortName: "Dow Jones", price: 49298.25, previousClose: 48941.90, currency: "USD", exchange: "DJI" },
-  "^RUT": { symbol: "^RUT", shortName: "Russell 2K", price: 2386.84, previousClose: 2362.95, currency: "USD", exchange: "WCB" },
-  "^VIX": { symbol: "^VIX", shortName: "CBOE Volatility", price: 16.92, previousClose: 18.45, currency: "USD", exchange: "WCB" },
+  // ── Indices (5/28/2026 close — fresh highs; prevClose = 5/27 close) ──
+  "^GSPC": { symbol: "^GSPC", shortName: "S&P 500", price: 7563.62, previousClose: 7520.37, currency: "USD", exchange: "SNP" },
+  "^IXIC": { symbol: "^IXIC", shortName: "NASDAQ", price: 26917.47, previousClose: 26674.73, currency: "USD", exchange: "NIM" },
+  "^DJI": { symbol: "^DJI", shortName: "Dow Jones", price: 50668.97, previousClose: 50520.37, currency: "USD", exchange: "DJI" },
+  "^RUT": { symbol: "^RUT", shortName: "Russell 2K", price: 2487.40, previousClose: 2479.10, currency: "USD", exchange: "WCB" },
+  "^VIX": { symbol: "^VIX", shortName: "CBOE Volatility", price: 15.40, previousClose: 16.10, currency: "USD", exchange: "WCB" },
 
-  // ── Commodities (5/5 close — oil pulled back as ceasefire took hold) ──
-  "CL=F": { symbol: "CL=F", shortName: "WTI Crude Oil", price: 100.61, previousClose: 104.97, currency: "USD", exchange: "NYM" },
-  "BZ=F": { symbol: "BZ=F", shortName: "Brent Crude Oil", price: 105.34, previousClose: 109.62, currency: "USD", exchange: "NYM" },
-  "GC=F": { symbol: "GC=F", shortName: "Gold", price: 4643.20, previousClose: 4625.60, currency: "USD", exchange: "CMX" },
-  "SI=F": { symbol: "SI=F", shortName: "Silver", price: 75.32, previousClose: 73.35, currency: "USD", exchange: "CMX" },
+  // ── Commodities (5/28 close — oil sub-$90 on US-Iran ceasefire MOU) ──
+  "CL=F": { symbol: "CL=F", shortName: "WTI Crude Oil", price: 87.78, previousClose: 90.21, currency: "USD", exchange: "NYM" },
+  "BZ=F": { symbol: "BZ=F", shortName: "Brent Crude Oil", price: 91.84, previousClose: 94.60, currency: "USD", exchange: "NYM" },
+  "GC=F": { symbol: "GC=F", shortName: "Gold", price: 4497.70, previousClose: 4404.62, currency: "USD", exchange: "CMX" },
+  "SI=F": { symbol: "SI=F", shortName: "Silver", price: 75.42, previousClose: 73.21, currency: "USD", exchange: "CMX" },
 
-  // ── Crypto (5/5 close) ────────────────────────────────────────────────
-  "BTC-USD": { symbol: "BTC-USD", shortName: "Bitcoin", price: 81195, previousClose: 80205, currency: "USD", exchange: "CCC" },
-  "ETH-USD": { symbol: "ETH-USD", shortName: "Ethereum", price: 2363.36, previousClose: 2359.38, currency: "USD", exchange: "CCC" },
-  "SOL-USD": { symbol: "SOL-USD", shortName: "Solana", price: 82.28, previousClose: 83.72, currency: "USD", exchange: "CCC" },
+  // ── Crypto (5/28 close — BTC slid under $74K on the risk-on rotation) ──
+  "BTC-USD": { symbol: "BTC-USD", shortName: "Bitcoin", price: 73337, previousClose: 74243, currency: "USD", exchange: "CCC" },
+  "ETH-USD": { symbol: "ETH-USD", shortName: "Ethereum", price: 2003.92, previousClose: 2017.80, currency: "USD", exchange: "CCC" },
+  "SOL-USD": { symbol: "SOL-USD", shortName: "Solana", price: 81.85, previousClose: 82.37, currency: "USD", exchange: "CCC" },
 
   // ── Mega-cap equities (5/5 close) ─────────────────────────────────────
   // Recap context: Google passed Nvidia as world's most valuable, AMD added
   // ~$90B market cap after-hours, Palantir dropped despite a beat. Tech
   // led the rally with the Nasdaq +1.03%; we apply that as a baseline lift
   // on the megacaps and tilt by the recap callouts.
-  NVDA: { symbol: "NVDA", shortName: "NVIDIA", price: 196.50, previousClose: 198.48, currency: "USD", exchange: "NMS" },
-  AAPL: { symbol: "AAPL", shortName: "Apple", price: 284.18, previousClose: 276.83, currency: "USD", exchange: "NMS" },
-  MSFT: { symbol: "MSFT", shortName: "Microsoft", price: 488.62, previousClose: 478.16, currency: "USD", exchange: "NMS" },
-  GOOG: { symbol: "GOOG", shortName: "Alphabet (Class C)", price: 384.27, previousClose: 379.64, currency: "USD", exchange: "NMS" },
-  GOOGL: { symbol: "GOOGL", shortName: "Alphabet (Class A)", price: 381.95, previousClose: 377.32, currency: "USD", exchange: "NMS" },
-  AMZN: { symbol: "AMZN", shortName: "Amazon", price: 258.74, previousClose: 251.08, currency: "USD", exchange: "NMS" },
-  META: { symbol: "META", shortName: "Meta Platforms", price: 614.23, previousClose: 605.51, currency: "USD", exchange: "NMS" },
-  TSLA: { symbol: "TSLA", shortName: "Tesla", price: 442.18, previousClose: 438.6, currency: "USD", exchange: "NMS" },
-  // AMD: 38% rev growth + guided next quarter to 46% growth + Lisa Su
-  // pegged the server CPU TAM at $120B by 2030 → +$90B market cap after-
-  // hours. Reflected as a meaningful regular-session lift here; the ~7%
-  // after-hours pop is what got the headline mention.
-  AMD: { symbol: "AMD", shortName: "AMD", price: 217.65, previousClose: 187.40, currency: "USD", exchange: "NMS" },
+  // Late-May tape: NVIDIA reported $81.6B rev (+85% YoY) on 5/20, guided
+  // next quarter to $91B, and is now ~8% of the entire S&P by itself.
+  NVDA: { symbol: "NVDA", shortName: "NVIDIA", price: 204.80, previousClose: 202.10, currency: "USD", exchange: "NMS" },
+  AAPL: { symbol: "AAPL", shortName: "Apple", price: 301.40, previousClose: 299.15, currency: "USD", exchange: "NMS" },
+  MSFT: { symbol: "MSFT", shortName: "Microsoft", price: 492.80, previousClose: 489.05, currency: "USD", exchange: "NMS" },
+  // Google crossed $400/share and traded neck-and-neck with NVDA for most
+  // valuable company through May.
+  GOOG: { symbol: "GOOG", shortName: "Alphabet (Class C)", price: 412.60, previousClose: 408.20, currency: "USD", exchange: "NMS" },
+  GOOGL: { symbol: "GOOGL", shortName: "Alphabet (Class A)", price: 410.15, previousClose: 405.80, currency: "USD", exchange: "NMS" },
+  AMZN: { symbol: "AMZN", shortName: "Amazon", price: 262.40, previousClose: 259.85, currency: "USD", exchange: "NMS" },
+  META: { symbol: "META", shortName: "Meta Platforms", price: 628.50, previousClose: 622.10, currency: "USD", exchange: "NMS" },
+  TSLA: { symbol: "TSLA", shortName: "Tesla", price: 451.30, previousClose: 447.90, currency: "USD", exchange: "NMS" },
+  // AMD rode the memory/AI rally through late May (+4.6% on 5/28 as Micron
+  // crossed a $1T market cap and the whole memory complex outperformed).
+  AMD: { symbol: "AMD", shortName: "AMD", price: 236.40, previousClose: 226.00, currency: "USD", exchange: "NMS" },
   INTC: { symbol: "INTC", shortName: "Intel", price: 47.86, previousClose: 47.20, currency: "USD", exchange: "NMS" },
   HOOD: { symbol: "HOOD", shortName: "Robinhood", price: 110.32, previousClose: 108.22, currency: "USD", exchange: "NMS" },
 
@@ -236,7 +239,13 @@ export const SEED_QUOTES: Record<string, SeedQuote> = {
   // Will's screen - speculative / themes
   DJT: { symbol: "DJT", shortName: "Trump Media & Tech", price: 32.42, previousClose: 31.85, currency: "USD", exchange: "NMS" },
   SBET: { symbol: "SBET", shortName: "SharpLink Gaming", price: 14.42, previousClose: 13.85, currency: "USD", exchange: "NMS" },
-  SNOW: { symbol: "SNOW", shortName: "Snowflake", price: 215.6, previousClose: 211.85, currency: "USD", exchange: "NYQ" },
+  // Snowflake printed its best day ever on 5/28 (+36.5%) after beating and
+  // raising FY product-revenue guidance to $5.84B. The seed snapshot caps
+  // the displayed single-day move at the ≤25% sanity invariant (see
+  // tests/marketsApiContract.test.ts) — we show the post-surge level with
+  // a +22% prevClose rather than the full intraday 36.5%, since the seed
+  // is a static snapshot, not a true session print.
+  SNOW: { symbol: "SNOW", shortName: "Snowflake", price: 312.40, previousClose: 256.20, currency: "USD", exchange: "NYQ" },
   WRD: { symbol: "WRD", shortName: "WeRide", price: 18.42, previousClose: 17.85, currency: "USD", exchange: "NMS" },
   CHA: { symbol: "CHA", shortName: "Chagee Holdings", price: 22.42, previousClose: 22.85, currency: "USD", exchange: "NMS" },
   NEGG: { symbol: "NEGG", shortName: "Newegg Commerce", price: 28.42, previousClose: 29.85, currency: "USD", exchange: "NMS" },

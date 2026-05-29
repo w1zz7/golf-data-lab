@@ -138,6 +138,108 @@ const FRAMEWORK: FrameworkPoint[] = [
   },
 ];
 
+/* ----------------------------------------------------------------
+   SECTION 3 data - Mean Reversion (non-options playbook)
+   ---------------------------------------------------------------- */
+interface MRType {
+  label: string;
+  body: string;
+  accent: string;
+}
+const MR_TYPES: MRType[] = [
+  {
+    label: "Price mean reversion",
+    body: "A stock drops hard, gets oversold, then bounces back toward its recent average. The fastest, most tradable form.",
+    accent: "#3465a4",
+  },
+  {
+    label: "Valuation mean reversion",
+    body: "A stock trades at an unusually high or low multiple (P/E, EV/EBITDA), then drifts back toward its historical valuation band.",
+    accent: "#73d216",
+  },
+  {
+    label: "Business mean reversion",
+    body: "Margins, growth, or returns on capital get unusually strong or weak, then normalize over time as competition and economics pull abnormal profits back.",
+    accent: "#f57900",
+  },
+];
+
+const MR_WHY: string[] = [
+  "Traders overreact to news",
+  "Forced buying or selling creates temporary dislocations",
+  "Sentiment gets extreme at the highs and lows",
+  "Competition and economics pull abnormal profits back toward normal",
+  "Volatility clusters, then cools off",
+];
+
+const MR_MEASURES: string[] = [
+  "Distance from moving averages",
+  "Z-scores",
+  "RSI / short-term momentum extremes",
+  "Bollinger Bands",
+  "Historical valuation bands (P/E, EV/EBITDA)",
+];
+
+const MR_WORKS: string[] = [
+  "Range-bound markets",
+  "Liquid names",
+  "Short timeframes",
+  "Panic spikes that are emotional, not fundamental",
+];
+
+const MR_FAILS: string[] = [
+  "Real regime changes",
+  "Earnings resets",
+  "Fraud, litigation, broken balance sheets",
+  "Secular winners and losers that keep trending",
+  "Macro shifts (rates repricing the whole market)",
+];
+
+/* ----------------------------------------------------------------
+   SECTION 4 data - Options Playbook
+   ---------------------------------------------------------------- */
+interface OptionSetup {
+  view: string;
+  strategy: string;
+  bias: Bias;
+}
+const OPTIONS_SETUPS: OptionSetup[] = [
+  { view: "Bullish, defined risk", strategy: "Buy a call debit spread", bias: "bullish" },
+  { view: "Bearish, defined risk", strategy: "Buy a put debit spread", bias: "bearish" },
+  {
+    view: "Neutral / income",
+    strategy: "Sell a cash-secured put on a stock you actually want to own",
+    bias: "neutral",
+  },
+  { view: "Own shares, want income", strategy: "Covered call", bias: "neutral" },
+  {
+    view: "Expect a huge move, unsure direction",
+    strategy: "Long straddle or strangle",
+    bias: "neutral",
+  },
+  { view: "Expect low volatility / chop", strategy: "Iron condor", bias: "neutral" },
+];
+
+interface OptionRank {
+  label: string;
+  pick: string;
+  tone: Bias;
+}
+const OPTIONS_HIERARCHY: OptionRank[] = [
+  { label: "Highest upside", pick: "Long calls / puts", tone: "bullish" },
+  { label: "Best risk-adjusted for most people", pick: "Debit spreads", tone: "bullish" },
+  {
+    label: "Best conservative income",
+    pick: "Cash-secured puts / covered calls",
+    tone: "neutral",
+  },
+  {
+    label: "Worst common habit",
+    pick: "Buying short-dated, far-OTM calls because they look “cheap”",
+    tone: "bearish",
+  },
+];
+
 const BIAS_COLOR: Record<Bias, { bg: string; fg: string; border: string }> = {
   bullish: { bg: "#dff5d8", fg: "#0a5b16", border: "#73d216" },
   neutral: { bg: "#f1f1f1", fg: "#444444", border: "#808080" },
@@ -325,6 +427,200 @@ export default function TradingStrategy({ window: _ }: { window: WindowState }) 
           </div>
         </div>
 
+        {/* =========================================================
+             SECTION 3 - Mean Reversion (non-options)
+             ========================================================= */}
+        <SectionHeader
+          eyebrow="Section 3"
+          title="Mean Reversion"
+          subtitle="Non-options - has this moved too far, too fast?"
+        />
+
+        <div className="px-[14px] pt-[12px] pb-[14px] flex flex-col gap-[12px]">
+          {/* Definition card */}
+          <div className="win-window p-[14px]" style={{ background: "#fffef0" }}>
+            <div className="text-[16px] leading-relaxed text-[#222]">
+              Mean reversion is the idea that price, valuation, margins,
+              volatility, or sentiment can stretch too far from their usual
+              level, then drift or snap back toward a normal range. The core
+              question it asks:{" "}
+              <span className="font-bold" style={{ color: "#000080" }}>
+                &ldquo;Has this moved too far, too fast?&rdquo;
+              </span>{" "}
+              Its mirror image is trend following, which asks{" "}
+              <span className="italic">
+                &ldquo;Is this move strong enough to continue?&rdquo;
+              </span>{" "}
+              Both work - in different environments.
+            </div>
+          </div>
+
+          {/* Three types */}
+          <div>
+            <div className="font-bold text-[15px] uppercase tracking-wide text-[color:var(--color-win-text-disabled)] mb-[6px]">
+              Three flavors people mean by it
+            </div>
+            <div
+              className="grid gap-[8px]"
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
+            >
+              {MR_TYPES.map((t) => (
+                <div key={t.label} className="win-sunken bg-white flex" style={{ minHeight: 70 }}>
+                  <div style={{ width: 6, background: t.accent, flexShrink: 0 }} aria-hidden />
+                  <div className="flex-1 p-[10px]">
+                    <div className="font-bold text-[16px] leading-tight">{t.label}</div>
+                    <div className="text-[14px] text-[#333] leading-snug mt-[2px]">{t.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Worked example */}
+          <div className="win-window p-[12px] flex items-start gap-[10px]" style={{ background: "#eef3f8" }}>
+            <div
+              className="shrink-0 flex items-center justify-center font-bold text-white"
+              style={{ width: 28, height: 28, background: "#3465a4", borderRadius: 2, fontSize: 15 }}
+              aria-hidden
+            >
+              EG
+            </div>
+            <div className="flex-1 text-[15px] leading-relaxed">
+              If <span className="font-bold">AAPL</span> usually trades around
+              its 50-day average and suddenly falls 12% on a headline that is
+              not structurally important, a mean-reversion trader expects some
+              bounce back once the panic selling fades.
+            </div>
+          </div>
+
+          {/* Why it happens + How to measure - two columns */}
+          <div className="grid gap-[8px]" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            <ListCard title="Why it happens" items={MR_WHY} accent="#3465a4" />
+            <ListCard title="How people measure it" items={MR_MEASURES} accent="#ad7fa8" />
+          </div>
+
+          {/* Where it works vs fails */}
+          <div className="grid gap-[8px]" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            <ListCard title="Where it works best" items={MR_WORKS} accent="#73d216" tone="bullish" />
+            <ListCard title="Where it fails badly" items={MR_FAILS} accent="#ef2929" tone="bearish" />
+          </div>
+
+          {/* The trap */}
+          <div
+            className="win-window p-[12px] flex items-start gap-[10px]"
+            style={{ background: "#fbe0dd", border: "1px solid #ef2929" }}
+          >
+            <div
+              className="shrink-0 flex items-center justify-center font-bold text-white"
+              style={{ width: 28, height: 28, background: "#ef2929", borderRadius: 2, fontSize: 18 }}
+              aria-hidden
+            >
+              !
+            </div>
+            <div className="flex-1">
+              <div className="text-[15px] font-bold uppercase tracking-wide" style={{ color: "#8b1c12" }}>
+                The trap
+              </div>
+              <div className="text-[16px] leading-relaxed mt-[2px] italic" style={{ color: "#8b1c12" }}>
+                Cheap can get cheaper, and overbought can stay overbought. The
+                real skill is telling a temporary stretch apart from a genuine
+                change in reality.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================
+             SECTION 4 - Options Playbook
+             ========================================================= */}
+        <SectionHeader
+          eyebrow="Section 4"
+          title="Options Playbook"
+          subtitle="Match the structure to your market view"
+        />
+
+        <div className="px-[14px] pt-[12px] pb-[14px] flex flex-col gap-[12px]">
+          {/* Default set - view -> strategy mapping */}
+          <div>
+            <div className="font-bold text-[15px] uppercase tracking-wide text-[color:var(--color-win-text-disabled)] mb-[6px]">
+              The practical default set
+            </div>
+            <div className="flex flex-col gap-[6px]">
+              {OPTIONS_SETUPS.map((s) => {
+                const c = BIAS_COLOR[s.bias];
+                return (
+                  <div
+                    key={s.view}
+                    className="flex items-center gap-[10px] p-[10px]"
+                    style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 2 }}
+                  >
+                    <span
+                      className="shrink-0 text-[14px] font-bold"
+                      style={{ color: c.fg, minWidth: 200 }}
+                    >
+                      {s.view}
+                    </span>
+                    <span className="text-[15px] leading-snug" style={{ color: "#222" }}>
+                      {s.strategy}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Best all-around callout */}
+          <div className="win-window p-[14px]" style={{ background: "#fffef0" }}>
+            <div className="text-[15px] font-bold uppercase tracking-wide" style={{ color: "#000080" }}>
+              Single best all-around for most non-pro traders
+            </div>
+            <div className="text-[16px] leading-relaxed mt-[4px] text-[#222]">
+              Usually the{" "}
+              <span className="font-bold">call debit spread</span> or{" "}
+              <span className="font-bold">put debit spread</span>. They&apos;re
+              cheaper than naked long options, have a defined max loss, suffer
+              less theta pain than a single far-OTM option, and let you be
+              directionally right without needing a gigantic move.
+            </div>
+            <div
+              className="text-[15px] leading-relaxed mt-[8px] italic p-[8px]"
+              style={{ background: "#eef3f8", borderRadius: 2 }}
+            >
+              Example: bullish on SPY for the next 2-6 weeks? A call spread is
+              usually cleaner than buying lottery-ticket calls.
+            </div>
+          </div>
+
+          {/* The real answer - hierarchy */}
+          <div>
+            <div className="font-bold text-[15px] uppercase tracking-wide text-[color:var(--color-win-text-disabled)] mb-[6px]">
+              The real answer
+            </div>
+            <div className="flex flex-col gap-[6px]">
+              {OPTIONS_HIERARCHY.map((r) => {
+                const c = BIAS_COLOR[r.tone];
+                return (
+                  <div
+                    key={r.label}
+                    className="flex items-center gap-[10px] p-[10px]"
+                    style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 2 }}
+                  >
+                    <span
+                      className="shrink-0 px-[6px] py-[2px] text-[12px] font-bold uppercase tracking-wide text-white"
+                      style={{ background: c.border, borderRadius: 2, minWidth: 150, textAlign: "center" }}
+                    >
+                      {r.label}
+                    </span>
+                    <span className="text-[15px] leading-snug" style={{ color: c.fg }}>
+                      {r.pick}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         {/* CTA strip */}
         <div className="px-[14px] py-[10px] border-t border-[#808080] flex gap-[6px] flex-wrap bg-[color:var(--color-win-bg)]">
           <button
@@ -461,6 +757,47 @@ function FrameworkCard({ point }: { point: FrameworkPoint }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------
+   ListCard - a titled bullet list with a color stripe. Used by the
+   Mean Reversion section for "why it happens / how to measure /
+   where it works / where it fails". `tone` tints the bullets green
+   (works) or red (fails); default leaves them neutral dark.
+   ---------------------------------------------------------------- */
+function ListCard({
+  title,
+  items,
+  accent,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  accent: string;
+  tone?: Bias;
+}) {
+  const bulletColor =
+    tone === "bullish" ? "#0a5b16" : tone === "bearish" ? "#8b1c12" : "#333";
+  return (
+    <div className="win-sunken bg-white flex" style={{ minHeight: 70 }}>
+      <div style={{ width: 6, background: accent, flexShrink: 0 }} aria-hidden />
+      <div className="flex-1 p-[10px]">
+        <div className="font-bold text-[15px] uppercase tracking-wide" style={{ color: accent }}>
+          {title}
+        </div>
+        <ul className="mt-[6px] flex flex-col gap-[3px]">
+          {items.map((it) => (
+            <li key={it} className="flex items-start gap-[6px] text-[14px] leading-snug" style={{ color: bulletColor }}>
+              <span aria-hidden style={{ color: accent, fontWeight: 700 }}>
+                ›
+              </span>
+              <span>{it}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
