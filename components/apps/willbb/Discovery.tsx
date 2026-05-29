@@ -127,9 +127,13 @@ export default function Discovery({
       <div className="flex-1 min-h-0">
         {tab === "screeners" && (
           <div
-            className="grid h-full overflow-hidden"
+            className="grid h-full overflow-x-auto md:overflow-hidden willbb-noscrollbar"
             style={{
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              // Desktop: 3 equal columns fill the pane. Mobile: each column
+              // keeps a readable ~150px min and the row scrolls horizontally
+              // (swipe between Gainers / Losers / Most Active) instead of
+              // crushing all three into a phone's width.
+              gridTemplateColumns: "repeat(3, minmax(150px, 1fr))",
               background: COLORS.bg,
             }}
           >

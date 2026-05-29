@@ -264,7 +264,7 @@ export default function RiskDashboard({
       </div>
 
       {/* Top: rolling stats + drawdown + histogram + QQ plot */}
-      <div className="grid grid-cols-2 gap-[1px]" style={{ background: COLORS.border }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[1px]" style={{ background: COLORS.border }}>
         <Panel title={`Rolling 60-day Sharpe / Sortino / IR · ${symbol}`}>
           <TripleRollingChart
             sharpe={rollingSharpe}
@@ -296,7 +296,7 @@ export default function RiskDashboard({
       </div>
 
       {/* Rolling factor exposures + risk decomposition */}
-      <div className="grid grid-cols-2 gap-[1px]" style={{ background: COLORS.border, marginTop: 1 }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[1px]" style={{ background: COLORS.border, marginTop: 1 }}>
         <Panel title="Rolling factor exposures (60-day)">
           {rollingExposures ? <RollingExposuresChart data={rollingExposures} /> : <div style={{ color: COLORS.textFaint, padding: 14, fontSize: 11, fontFamily: FONT_MONO }}>loading…</div>}
         </Panel>
@@ -306,7 +306,7 @@ export default function RiskDashboard({
       </div>
 
       {/* VaR + position sizer + last backtest */}
-      <div className="grid grid-cols-3 gap-[1px]" style={{ background: COLORS.border, marginTop: 1 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px]" style={{ background: COLORS.border, marginTop: 1 }}>
         <Panel title="Historical VaR / ES (1d / 10d)">
           {varStats ? (
             <div className="grid grid-cols-2 gap-[1px]" style={{ background: COLORS.border }}>

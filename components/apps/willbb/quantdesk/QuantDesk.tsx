@@ -105,7 +105,7 @@ function CapabilityStrip() {
   ];
   return (
     <div
-      className="px-[14px] py-[6px] flex items-center gap-[14px] overflow-x-auto shrink-0"
+      className="px-[14px] py-[6px] flex items-center gap-[14px] overflow-x-auto willbb-noscrollbar shrink-0"
       style={{
         background: "linear-gradient(90deg, rgba(240,104,106,0.08) 0%, rgba(51,187,255,0.06) 100%)",
         borderBottom: "1px solid " + COLORS.border,
@@ -163,7 +163,7 @@ function SubTabBar({
 }) {
   return (
     <div
-      className="flex shrink-0"
+      className="flex shrink-0 overflow-x-auto willbb-noscrollbar"
       style={{
         background: COLORS.panel,
         borderBottom: "1px solid " + COLORS.border,
@@ -176,7 +176,7 @@ function SubTabBar({
             key={t.id}
             type="button"
             onClick={() => setSubTab(t.id)}
-            className="px-[16px] py-[8px] text-left"
+            className="px-[16px] py-[8px] text-left shrink-0 whitespace-nowrap"
             style={{
               color: active ? COLORS.text : COLORS.textDim,
               borderBottom: active

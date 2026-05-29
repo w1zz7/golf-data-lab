@@ -397,6 +397,66 @@ function fmtBigNum(s: string): string {
   return n.toFixed(0);
 }
 
+/* ----------------------------------------------------------------------- *
+ * Seed fallback shape-mappers.
+ *
+ * SmartMoneyView is built on Alpha Vantage's INSIDER_TRANSACTIONS /
+ * INSTITUTIONAL_HOLDINGS, but that budget is frequently exhausted (or no key
+ * is configured), in which case AV returns `{data:[]}` or `{unavailable:true}`
+ * and the panel would otherwise read "unavailable". The unified equity route
+ * (/api/markets/equity?module=insider|institutional) always returns coherent
+ * seed data for watchlist symbols — the same source the Holders tab uses — so
+ * we fall back to it and reshape its rows into the AV row shape the table
+ * already knows how to render.
+ * ----------------------------------------------------------------------- */
+
+interface SeedInsiderTxn {
+  name?: string;
+  relation?: string;
+  transactionText?: string;
+  shares?: number;
+  value?: number;
+  date?: string;
+}
+
+interface SeedInstitutionalHolder {
+  organization?: string;
+  pctHeld?: number;
+  position?: number;
+  value?: number;
+  reportDate?: string;
+}
+
+function mapSeedInsider(t: SeedInsiderTxn, ticker: string): InsiderTxn {
+  const text = String(t.transactionText ?? "");
+  // "Sale - Plan rule 10b5-1" / "Sold" → disposal; "Option Exercise" / "Buy" → acquisition.
+  const isDisposal = /sale|sold|dispos|sell/i.test(text);
+  const sh = Number(t.shares) || 0;
+  const val = Number(t.value) || 0;
+  return {
+    transaction_date: t.date ?? "",
+    ticker,
+    executive: t.name ?? "",
+    executive_title: t.relation ?? "",
+    security_type: "Common Stock",
+    acquisition_or_disposal: isDisposal ? "D" : "A",
+    shares: String(sh),
+    share_price: sh > 0 ? String(val / sh) : "0",
+  };
+}
+
+function mapSeedInstitutional(h: SeedInstitutionalHolder): InstitutionalHolder {
+  return {
+    holder: h.organization ?? "",
+    shares: String(h.position ?? 0),
+    market_value: String(h.value ?? 0),
+    // Seed stores pctHeld as a fraction (0.082); the table renders the string
+    // via parseFloat(...).toFixed(2) + "%", so scale to a percentage point.
+    percent_of_outstanding: String((Number(h.pctHeld) || 0) * 100),
+    reporting_date: h.reportDate ?? "",
+  };
+}
+
 export function SmartMoneyView({ symbol }: { symbol: string }) {
   const [insider, setInsider] = useState<InsiderTxn[] | null>(null);
   const [insiderUnavailable, setInsiderUnavailable] = useState(false);
@@ -412,20 +472,52 @@ export function SmartMoneyView({ symbol }: { symbol: string }) {
     setInstUnavailable(false);
     const ctrl = new AbortController();
 
-    Promise.all([
-      fetch(`/api/markets/alpha?fn=INSIDER&symbol=${encodeURIComponent(symbol)}`, { signal: ctrl.signal })
+    const json = (url: string) =>
+      fetch(url, { signal: ctrl.signal })
         .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-      fetch(`/api/markets/alpha?fn=INSTITUTIONAL&symbol=${encodeURIComponent(symbol)}`, { signal: ctrl.signal })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-    ]).then(([ins, instr]: [{ data?: InsiderTxn[]; unavailable?: boolean } | null, { data?: InstitutionalHolder[]; unavailable?: boolean } | null]) => {
-      if (!ins || ins.unavailable) setInsiderUnavailable(true);
-      else setInsider(ins.data ?? []);
-      if (!instr || instr.unavailable) setInstUnavailable(true);
-      else setInst(instr.data ?? []);
+        .catch(() => null);
+
+    (async () => {
+      // Primary: Alpha Vantage. Treat empty arrays as "no live data" so we
+      // fall through to the seed route rather than rendering a blank panel.
+      const [insAV, instrAV] = (await Promise.all([
+        json(`/api/markets/alpha?fn=INSIDER&symbol=${encodeURIComponent(symbol)}`),
+        json(`/api/markets/alpha?fn=INSTITUTIONAL&symbol=${encodeURIComponent(symbol)}`),
+      ])) as [
+        { data?: InsiderTxn[]; unavailable?: boolean } | null,
+        { data?: InstitutionalHolder[]; unavailable?: boolean } | null,
+      ];
+
+      let insiderRows: InsiderTxn[] | null =
+        insAV && !insAV.unavailable && insAV.data && insAV.data.length > 0 ? insAV.data : null;
+      let instRows: InstitutionalHolder[] | null =
+        instrAV && !instrAV.unavailable && instrAV.data && instrAV.data.length > 0 ? instrAV.data : null;
+
+      // Fallback: unified equity seed route (same source as the Holders tab).
+      if (!insiderRows) {
+        const seed = (await json(
+          `/api/markets/equity?module=insider&symbol=${encodeURIComponent(symbol)}`
+        )) as { transactions?: SeedInsiderTxn[] } | null;
+        if (seed && Array.isArray(seed.transactions) && seed.transactions.length > 0) {
+          insiderRows = seed.transactions.map((t) => mapSeedInsider(t, symbol));
+        }
+      }
+      if (!instRows) {
+        const seed = (await json(
+          `/api/markets/equity?module=institutional&symbol=${encodeURIComponent(symbol)}`
+        )) as { institutional?: SeedInstitutionalHolder[] } | null;
+        if (seed && Array.isArray(seed.institutional) && seed.institutional.length > 0) {
+          instRows = seed.institutional.map(mapSeedInstitutional);
+        }
+      }
+
+      if (ctrl.signal.aborted) return;
+      if (insiderRows && insiderRows.length > 0) setInsider(insiderRows);
+      else setInsiderUnavailable(true);
+      if (instRows && instRows.length > 0) setInst(instRows);
+      else setInstUnavailable(true);
       setLoading(false);
-    });
+    })();
     return () => ctrl.abort();
   }, [symbol]);
 
@@ -562,7 +654,11 @@ function makeQuarterOptions(): string[] {
 
 export function TranscriptView({ symbol }: { symbol: string }) {
   const quarters = useMemo(() => makeQuarterOptions(), []);
-  const [quarter, setQuarter] = useState<string>(quarters[0]);
+  // Default to the PREVIOUS quarter, not the current one: companies report a
+  // quarter's earnings call weeks after the quarter closes, so the current
+  // quarter (quarters[0]) almost never has a transcript yet. Starting on the
+  // last reported quarter means the tab shows content immediately.
+  const [quarter, setQuarter] = useState<string>(quarters[1] ?? quarters[0]);
   const [paragraphs, setParagraphs] = useState<TranscriptParagraph[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
@@ -651,7 +747,7 @@ export function TranscriptView({ symbol }: { symbol: string }) {
       </div>
 
       {unavailable && (!paragraphs || paragraphs.length === 0) && (
-        <UnavailableShell msg={`No transcript available for ${symbol} ${quarter}. Try a more recent quarter.`} />
+        <UnavailableShell msg={`No transcript available for ${symbol} ${quarter}. Try an earlier quarter.`} />
       )}
 
       {!loading && paragraphs && paragraphs.length > 0 && (

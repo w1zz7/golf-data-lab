@@ -90,7 +90,6 @@ export default function InternetExplorer({ window: win }: { window: WindowState 
       items: [
         { label: "★ BulletproofAI.org", action: () => go("https://bulletproofai.org") },
         { label: "★ Portfolio home", action: () => openApp("about") },
-        { label: "★ Resume.pdf", action: () => openApp("resume") },
         { separator: true },
         { label: "Add to Favorites (coming soon)", disabled: true },
       ],

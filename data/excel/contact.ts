@@ -49,10 +49,6 @@ export const contact: SheetData = {
     A5: { value: "Location", bold: true },
     B5: { value: "Philadelphia, PA" },
 
-    A6: { value: "Resume", bold: true },
-    B6: { value: "Resume.pdf - open in viewer" },
-    C6: { value: "Open →", onClick: { openApp: "resume" } },
-
     A9: {
       value: "Let's build something.",
       bold: true,

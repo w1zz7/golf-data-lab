@@ -524,3 +524,14 @@ img.pixelated,
 .willbb-skeleton {
   animation: willbb-skeleton-pulse 1.1s ease-in-out infinite;
 }
+
+/* Hide scrollbars on the terminal's horizontally-scrollable strips (ticker,
+   tab bars, sub-tab rows) so mobile swipe-scroll stays clean. Content still
+   scrolls; only the bar chrome is hidden. */
+.willbb-noscrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.willbb-noscrollbar::-webkit-scrollbar {
+  display: none;
+}

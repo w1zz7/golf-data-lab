@@ -37,7 +37,7 @@ export const overview: SheetData = {
     },
 
     A5: { value: "Degree" },
-    B5: { value: "B.S. Business Admin · Business Analytics + Marketing" },
+    B5: { value: "B.S. Business Admin · Finance + MIS" },
 
     A6: { value: "GPA" },
     B6: { value: 4.0, formula: "=4.0/4.0", align: "right" },
@@ -108,9 +108,6 @@ export const overview: SheetData = {
       value: "www.linkedin.com/in/willzhang6200",
       href: "https://www.linkedin.com/in/willzhang6200",
     },
-
-    A25: { value: "Resume" },
-    B25: { value: "Resume.pdf (open in viewer)", onClick: { openApp: "resume" } },
 
     A26: { value: "Phone" },
     B26: { value: "(267) 255-1163" },

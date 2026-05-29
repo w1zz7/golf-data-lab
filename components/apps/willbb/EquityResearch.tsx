@@ -428,7 +428,7 @@ function SymbolBar({
 function SubTabBar({ sub, setSub }: { sub: SubTab; setSub: (s: SubTab) => void }) {
   return (
     <div
-      className="flex shrink-0 overflow-x-auto"
+      className="flex shrink-0 overflow-x-auto willbb-noscrollbar"
       style={{ background: COLORS.panel, borderBottom: "1px solid " + COLORS.border }}
     >
       {SUB_TABS.map((t) => {
@@ -438,7 +438,7 @@ function SubTabBar({ sub, setSub }: { sub: SubTab; setSub: (s: SubTab) => void }
             key={t.id}
             type="button"
             onClick={() => setSub(t.id)}
-            className="px-[14px] py-[8px] text-[12px] tracking-[0.04em] whitespace-nowrap"
+            className="px-[14px] py-[8px] text-[12px] tracking-[0.04em] whitespace-nowrap shrink-0"
             style={{
               color: active ? COLORS.text : COLORS.textDim,
               borderBottom: active ? "2px solid " + COLORS.brand : "2px solid transparent",

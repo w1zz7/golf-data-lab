@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 const DESCRIPTION =
-  "Will Zhang - student founder. Co-founder, Bulletproof AI (75k+ monthly tool runs, 200k-resume ATS model). 1st place Philly CodeFest 2026. Processed $315,020 in equity trades with a 63.98% gain ratio across 267 logged trades (Aug 2025 – Apr 2026). Drexel B.S. Business Administration (Business Analytics + Marketing) · GPA 4.0 · Dean's List · Philadelphia, PA.";
+  "Will Zhang - student founder. Co-founder, Bulletproof AI (75k+ monthly tool runs, 200k-resume ATS model). 1st place Philly CodeFest 2026. Processed $315,020 in equity trades with a 63.98% gain ratio across 267 logged trades (Aug 2025 – Apr 2026). Drexel B.S. Business Administration (Finance + MIS) · GPA 4.0 · Dean's List · Philadelphia, PA.";
 
 export const metadata: Metadata = {
   title: "Will Zhang - WillOS 98",
@@ -57,7 +57,7 @@ function HiddenSEOContent() {
       <h1>Will Zhang - Student Founder, Builder, Operator</h1>
       <p>{DESCRIPTION}</p>
       <ul>
-        <li>Drexel University · B.S. Business Administration (Business Analytics + Marketing) · GPA 4.0 · Dean's List · Expected Graduation June 2029 · Philadelphia, PA</li>
+        <li>Drexel University · B.S. Business Administration (Finance + MIS) · GPA 4.0 · Dean's List · Expected Graduation June 2029 · Philadelphia, PA</li>
         <li>Co-Founder, Bulletproof AI / Local Launch Studio Co. - Next.js / RAG / ATS model trained on 200,000 publicly sourced resumes. 75,000+ tool runs in Month 1 across 11 live AI tools.</li>
         <li>1st Place, Advanced Track - Philly CodeFest 2026 ($3,000 winner share, 370+ participants). Built PhilAIsion, an AI civic agent on a $50 Raspberry Pi 4 kiosk serving 700+ city services in 10 languages.</li>
         <li>Operations Team Lead, Super Lychee Golf Series - $85,000+ tuition collected; 8 FCG China Series events; 6-country athlete logistics.</li>
@@ -71,7 +71,7 @@ function HiddenSEOContent() {
         <li>Competitions: Jane Street Estimathon (3rd), Howley Finance (Finalist), Dean's Equity Research (Finalist), NJ Garden State Esports State Champion 2023 + 2024 ($40,000).</li>
       </ul>
       <p>
-        Contact: <a href="mailto:wz363@drexel.edu">wz363@drexel.edu</a> · (267) 255-1163 · <a href="https://www.linkedin.com/in/willzhang6200">linkedin.com/in/willzhang6200</a> · <a href="/resume.pdf">Resume (PDF)</a>
+        Contact: <a href="mailto:wz363@drexel.edu">wz363@drexel.edu</a> · (267) 255-1163 · <a href="https://www.linkedin.com/in/willzhang6200">linkedin.com/in/willzhang6200</a>
       </p>
     </div>
   );

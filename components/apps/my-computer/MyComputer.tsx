@@ -47,12 +47,6 @@ const ENTRIES: Entry[] = [
     props: { sheet: "metrics" },
   },
   {
-    label: "C:\\Resume.pdf",
-    icon: "/icons/pdf.svg",
-    hint: "Resume viewer",
-    appId: "resume",
-  },
-  {
     label: "C:\\Contact.txt",
     icon: "/icons/notepad.svg",
     hint: "Contact in retro notepad",

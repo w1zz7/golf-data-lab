@@ -12,7 +12,7 @@
  * `onComplete` when the sequence ends.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const COLORS = {
   bg: "#0a0d12",
@@ -69,11 +69,48 @@ const LINES: Line[] = [
 
 const TOTAL_MS = LINES[LINES.length - 1].delayMs + 400;
 
-export default function BootScreen({ onComplete }: { onComplete: () => void }) {
+/**
+ * @param dataReady  When false, the boot HOLDS at the end of the animation
+ *                   ("synchronizing market data…") and only advances once the
+ *                   dashboard's data has actually loaded — so the user never
+ *                   lands on a half-populated terminal. Defaults to true so the
+ *                   component still works standalone.
+ * @param maxWaitMs  Hard ceiling: advance regardless after this long, so a
+ *                   stalled feed can never trap the user on the boot screen.
+ */
+export default function BootScreen({
+  onComplete,
+  dataReady = true,
+  maxWaitMs = 7000,
+}: {
+  onComplete: () => void;
+  dataReady?: boolean;
+  maxWaitMs?: number;
+}) {
   const [visible, setVisible] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
   const [fading, setFading] = useState<boolean>(false);
+  const [animDone, setAnimDone] = useState<boolean>(false);
   const startedAt = useRef<number>(Date.now());
+  const doneRef = useRef<boolean>(false);
+
+  // Hold onComplete in a ref so `finish` can be a STABLE callback. The parent
+  // (OpenBB) passes a fresh inline onComplete every render (it re-renders ~1Hz
+  // for its clock); if `finish` depended on it, every timer/effect keyed on
+  // `finish` — including the maxWait safety net — would reset each second and
+  // never fire, trapping the user on the boot screen. The ref breaks that.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  // Idempotent finish: fade out, then hand off to the dashboard exactly once.
+  const finish = useCallback(() => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    setFading(true);
+    window.setTimeout(() => onCompleteRef.current(), 240);
+  }, []);
 
   // Stream lines in on their delays.
   useEffect(() => {
@@ -85,37 +122,46 @@ export default function BootScreen({ onComplete }: { onComplete: () => void }) {
     };
   }, []);
 
-  // Smooth progress bar.
+  // Smooth progress bar. Caps at 94% until the data is actually ready, so the
+  // bar visibly "waits" for the feed instead of hitting 100% on a dead app.
   useEffect(() => {
     const id = window.setInterval(() => {
       const elapsed = Date.now() - startedAt.current;
-      setProgress(Math.min(100, (elapsed / TOTAL_MS) * 100));
-      if (elapsed >= TOTAL_MS) window.clearInterval(id);
+      const timePct = Math.min(100, (elapsed / TOTAL_MS) * 100);
+      setProgress(dataReady ? timePct : Math.min(94, timePct));
+      if (elapsed >= TOTAL_MS && dataReady) window.clearInterval(id);
     }, 30);
     return () => window.clearInterval(id);
+  }, [dataReady]);
+
+  // Mark the scripted animation finished.
+  useEffect(() => {
+    const t = window.setTimeout(() => setAnimDone(true), TOTAL_MS - 200);
+    return () => window.clearTimeout(t);
   }, []);
 
-  // Fade to dashboard when sequence completes.
+  // Advance only when BOTH the animation has finished AND data has loaded.
   useEffect(() => {
-    const fadeTimer = window.setTimeout(() => setFading(true), TOTAL_MS - 200);
-    const doneTimer = window.setTimeout(() => onComplete(), TOTAL_MS + 280);
-    return () => {
-      window.clearTimeout(fadeTimer);
-      window.clearTimeout(doneTimer);
-    };
-  }, [onComplete]);
+    if (animDone && dataReady) finish();
+  }, [animDone, dataReady, finish]);
 
-  // Allow user to skip with any key or click.
+  // Safety net: never trap the user, even if the feed never resolves.
+  useEffect(() => {
+    const t = window.setTimeout(finish, maxWaitMs);
+    return () => window.clearTimeout(t);
+  }, [maxWaitMs, finish]);
+
+  // Allow user to skip with any key (manual override — enters even if the
+  // feed is still resolving; the dashboard panes have their own loaders).
   useEffect(() => {
     function skip() {
       setProgress(100);
       setVisible(LINES.length);
-      setFading(true);
-      window.setTimeout(onComplete, 240);
+      finish();
     }
     window.addEventListener("keydown", skip, { once: true });
     return () => window.removeEventListener("keydown", skip);
-  }, [onComplete]);
+  }, [finish]);
 
   const stamp = useMemo(() => {
     return new Date().toLocaleString("en-US", {
@@ -135,8 +181,7 @@ export default function BootScreen({ onComplete }: { onComplete: () => void }) {
       onClick={() => {
         setProgress(100);
         setVisible(LINES.length);
-        setFading(true);
-        window.setTimeout(onComplete, 240);
+        finish();
       }}
       className="absolute inset-0 z-30 flex flex-col cursor-pointer overflow-hidden"
       style={{
@@ -274,7 +319,11 @@ export default function BootScreen({ onComplete }: { onComplete: () => void }) {
       >
         <div className="flex items-baseline justify-between mb-[4px]">
           <span style={{ color: COLORS.textDim }}>
-            {progress < 100 ? "loading…" : "ready · click or press any key to continue"}
+            {!dataReady
+              ? "synchronizing market data…"
+              : progress < 100
+              ? "loading…"
+              : "ready · click or press any key to continue"}
           </span>
           <span style={{ color: COLORS.brand }}>{Math.floor(progress)}%</span>
         </div>

@@ -889,6 +889,58 @@ function inferSector(symbol: string): { sector: string; industry: string; summar
 }
 
 /**
+ * Heuristic share count from price, used to back-out a plausible market cap
+ * when no explicit seed is curated. Real companies trade across a huge range
+ * of share counts, but for a synthesized card we just want the resulting
+ * market cap to land in a believable band (single-digit to low-hundreds of
+ * billions) rather than absurd trillions.
+ *
+ * Calibrated so price × shares yields sane caps, e.g.:
+ *   $142.60 × 500e6  ≈ $71B   (CRWV-like mid/large-cap)
+ *   $30    × 600e6  ≈ $18B   (mid-cap)
+ *   $8     × 500e6  ≈ $4B    (small-cap)
+ *
+ * Higher-priced names get FEWER shares (high-priced stocks tend to have
+ * smaller floats), which keeps caps from ballooning at the top of the range.
+ */
+function heuristicShareCount(price: number): number {
+  return (
+    price > 500 ? 200e6 :
+    price > 200 ? 350e6 :
+    price > 100 ? 500e6 :
+    price > 50 ? 700e6 :
+    price > 20 ? 600e6 :
+    price > 5 ? 500e6 :
+    400e6
+  );
+}
+
+/**
+ * Deterministic pseudo-random in [0,1) from a symbol + salt (FNV-1a hash).
+ * Lets synthesized cards differ per symbol — so two non-seeded tech names
+ * don't show byte-identical multiples — while staying stable across reloads.
+ * Not cryptographic; it's just a spreader.
+ */
+function symbolHash(symbol: string, salt: number): number {
+  let h = (2166136261 ^ salt) >>> 0;
+  const s = symbol.toUpperCase();
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ((h >>> 0) % 100000) / 100000;
+}
+
+/**
+ * Deterministic multiplier in [1-spread, 1+spread] for a symbol + salt.
+ * Used to vary sector-typical multiples per symbol so synthesized Statistics
+ * cards read as individual companies, not a single template.
+ */
+function symbolVary(symbol: string, salt: number, spread: number): number {
+  return 1 + (symbolHash(symbol, salt) * 2 - 1) * spread;
+}
+
+/**
  * Synthesize a plausible Profile from SEED_QUOTES when an explicit seed
  * isn't curated. Lets every symbol on the watchlist render a Profile card
  * (sector + market cap + name) instead of an empty pane. Numbers are
@@ -903,18 +955,10 @@ function synthesizeProfile(symbol: string): ProfileSeed | null {
   const q = SEED_QUOTES[symbol.toUpperCase()];
   if (!q) return null;
   const inf = inferSector(symbol);
-  // Heuristic market cap: assume mid/large-cap outstanding shares scale
-  // roughly with price. This is FAR from accurate but it's better than 0,
-  // and the Profile card mostly shows the price + name + sector — the
-  // market-cap field rounds to a plausible bucket.
-  const heuristicShares =
-    q.price > 500 ? 3.5e9 :
-    q.price > 200 ? 8e9 :
-    q.price > 100 ? 12e9 :
-    q.price > 50 ? 18e9 :
-    q.price > 20 ? 32e9 :
-    q.price > 5 ? 80e9 :
-    300e9;
+  // Heuristic market cap: back out a plausible share count from price so the
+  // cap lands in a believable band. FAR from accurate, but the Profile card
+  // mostly shows price + name + sector — the cap rounds to a sane bucket.
+  const heuristicShares = heuristicShareCount(q.price);
   return {
     longName: q.shortName,
     shortName: q.shortName,
@@ -945,14 +989,7 @@ function synthesizeStats(symbol: string): StatsSeed | null {
   const q = SEED_QUOTES[symbol.toUpperCase()];
   if (!q) return null;
   const inf = inferSector(symbol);
-  const heuristicShares =
-    q.price > 500 ? 3.5e9 :
-    q.price > 200 ? 8e9 :
-    q.price > 100 ? 12e9 :
-    q.price > 50 ? 18e9 :
-    q.price > 20 ? 32e9 :
-    q.price > 5 ? 80e9 :
-    300e9;
+  const heuristicShares = heuristicShareCount(q.price);
   const mc = q.price * heuristicShares;
   // Sector-typical margin/multiple bands. Coarse but coherent — the goal is
   // to fill the Statistics card with directionally-plausible numbers, not
@@ -974,36 +1011,46 @@ function synthesizeStats(symbol: string): StatsSeed | null {
       averageVolume10Day: 30_000_000,
     };
   }
-  const grossMargin = isTech ? 0.62 : isFin ? 0.55 : isHealth ? 0.5 : isEng ? 0.32 : 0.4;
-  const operatingMargin = isTech ? 0.32 : isFin ? 0.38 : isHealth ? 0.18 : isEng ? 0.16 : 0.14;
+  // Per-symbol deterministic jitter so two synthesized names in the same
+  // sector don't show identical multiples (a dead giveaway that the card is
+  // templated). Each value gets its own salt and a sensible spread band.
+  const grossMargin = (isTech ? 0.62 : isFin ? 0.55 : isHealth ? 0.5 : isEng ? 0.32 : 0.4) * symbolVary(symbol, 1, 0.12);
+  const operatingMargin = (isTech ? 0.32 : isFin ? 0.38 : isHealth ? 0.18 : isEng ? 0.16 : 0.14) * symbolVary(symbol, 2, 0.2);
   const profitMargin = operatingMargin * 0.78;
-  const psSales = isTech ? 8 : isFin ? 4 : isEng ? 1.5 : 2.5;
+  const psSales = (isTech ? 8 : isFin ? 4 : isEng ? 1.5 : 2.5) * symbolVary(symbol, 3, 0.24);
   const revenueTTM = mc / psSales;
   const netIncomeTTM = revenueTTM * profitMargin;
   const eps = netIncomeTTM / heuristicShares;
   const trailingPE = eps > 0 ? q.price / eps : 35;
+  // Per-symbol jitter on the remaining sector-constant fields. Salts are
+  // unique per field; bookValue is derived from priceToBook so they stay
+  // consistent, and the four analyst targets are built from one `upside`
+  // factor so low < median < mean < high ordering always holds.
+  const priceToBook = (isTech ? 12 : isFin ? 1.6 : 4) * symbolVary(symbol, 5, 0.18);
+  const beta = (isTech ? 1.42 : isFin ? 1.14 : isEng ? 0.92 : 1.0) * symbolVary(symbol, 6, 0.12);
+  const upside = 1.06 + symbolHash(symbol, 13) * 0.14; // mean target premium 1.06–1.20
   return {
     marketCap: mc,
     enterpriseValue: mc * 1.05,
     trailingPE,
     forwardPE: trailingPE * 0.85,
-    pegRatio: 1.4,
-    priceToBook: isTech ? 12 : isFin ? 1.6 : 4,
+    pegRatio: 1.4 * symbolVary(symbol, 9, 0.3),
+    priceToBook,
     priceToSales: psSales,
     enterpriseToRevenue: psSales * 1.05,
     enterpriseToEbitda: trailingPE * 0.65,
     profitMargin,
     operatingMargin,
     grossMargin,
-    returnOnEquity: isTech ? 0.42 : isFin ? 0.18 : 0.16,
-    returnOnAssets: isTech ? 0.18 : isFin ? 0.012 : 0.07,
+    returnOnEquity: (isTech ? 0.42 : isFin ? 0.18 : 0.16) * symbolVary(symbol, 7, 0.2),
+    returnOnAssets: (isTech ? 0.18 : isFin ? 0.012 : 0.07) * symbolVary(symbol, 8, 0.2),
     revenueTTM,
     grossProfit: revenueTTM * grossMargin,
     ebitda: revenueTTM * (operatingMargin + 0.06),
     netIncomeTTM,
     eps,
     epsForward: eps * 1.18,
-    bookValue: q.price / (isTech ? 12 : isFin ? 1.6 : 4),
+    bookValue: q.price / priceToBook,
     sharesOutstanding: heuristicShares,
     floatShares: heuristicShares * 0.94,
     sharesShort: heuristicShares * 0.025,
@@ -1011,21 +1058,21 @@ function synthesizeStats(symbol: string): StatsSeed | null {
     shortPercentOfFloat: 0.027,
     heldPercentInsiders: 0.06,
     heldPercentInstitutions: 0.71,
-    beta: isTech ? 1.42 : isFin ? 1.14 : isEng ? 0.92 : 1.0,
-    fiftyTwoWeekHigh: q.price * 1.18,
-    fiftyTwoWeekLow: q.price * 0.62,
-    fiftyDayAverage: q.price * 0.96,
-    twoHundredDayAverage: q.price * 0.88,
-    averageVolume10Day: 8_000_000,
-    targetMeanPrice: q.price * 1.12,
-    targetMedianPrice: q.price * 1.10,
-    targetHighPrice: q.price * 1.35,
-    targetLowPrice: q.price * 0.85,
+    beta,
+    fiftyTwoWeekHigh: q.price * (1.12 + symbolHash(symbol, 11) * 0.16),
+    fiftyTwoWeekLow: q.price * (0.55 + symbolHash(symbol, 12) * 0.15),
+    fiftyDayAverage: q.price * (0.93 + symbolHash(symbol, 15) * 0.06),
+    twoHundredDayAverage: q.price * (0.82 + symbolHash(symbol, 16) * 0.1),
+    averageVolume10Day: Math.round((3 + symbolHash(symbol, 17) * 15) * 1e6),
+    targetMeanPrice: q.price * upside,
+    targetMedianPrice: q.price * upside * 0.985,
+    targetHighPrice: q.price * (upside + 0.22),
+    targetLowPrice: q.price * (0.82 + symbolHash(symbol, 14) * 0.06),
     recommendationKey: "buy",
-    numberOfAnalystOpinions: 24,
+    numberOfAnalystOpinions: Math.round(14 + symbolHash(symbol, 10) * 22),
     totalCash: revenueTTM * 0.18,
     totalDebt: revenueTTM * 0.22,
-    debtToEquity: isFin ? 1.5 : 0.4,
+    debtToEquity: (isFin ? 1.5 : 0.4) * symbolVary(symbol, 18, 0.3),
     currentRatio: 2.1,
     quickRatio: 1.8,
   };

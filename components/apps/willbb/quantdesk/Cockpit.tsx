@@ -375,12 +375,18 @@ export default function Cockpit({
   const liveSource: DataSource = liveQuote?.source ?? resp?.source ?? null;
 
   return (
-    <div className="h-full flex" style={{ background: COLORS.bg, fontFamily: FONT_UI }}>
+    // Desktop: chart pane beside a 300px analytics rail. Mobile: stack the
+    // rail BELOW a full-width chart and let the whole pane scroll vertically,
+    // so the chart isn't crushed to a sliver next to the rail.
+    <div
+      className="h-full flex flex-col md:flex-row overflow-y-auto md:overflow-hidden willbb-noscrollbar"
+      style={{ background: COLORS.bg, fontFamily: FONT_UI }}
+    >
       {/* Main pane */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Symbol + price + range bar */}
         <div
-          className="flex items-center gap-[18px] px-[14px] py-[8px] shrink-0"
+          className="flex items-center gap-[12px] md:gap-[18px] flex-wrap px-[14px] py-[8px] shrink-0"
           style={{ background: COLORS.panel, borderBottom: "1px solid " + COLORS.border }}
         >
           <div>
@@ -460,7 +466,7 @@ export default function Cockpit({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-none overflow-visible md:flex-1 md:min-h-0 md:overflow-auto">
           <QuantChart
             bars={bars}
             overlays={overlays}
@@ -513,10 +519,10 @@ export default function Cockpit({
         </div>
       </div>
 
-      {/* Right rail */}
+      {/* Right rail — full-width below the chart on mobile, fixed 300px beside it on desktop */}
       <div
-        className="overflow-y-auto shrink-0"
-        style={{ width: 300, background: COLORS.panel, borderLeft: "1px solid " + COLORS.border }}
+        className="overflow-y-auto shrink-0 w-full md:w-[300px] md:border-l"
+        style={{ background: COLORS.panel, borderColor: COLORS.border }}
       >
         {stats && (
           <div style={{ padding: "10px 12px", borderBottom: "1px solid " + COLORS.border }}>

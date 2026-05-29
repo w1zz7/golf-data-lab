@@ -453,14 +453,15 @@ export default function StrategyLab({
         )}
       </div>
 
-      <div className="flex flex-1 min-h-0">
-        {/* Code editor (left ~40%) */}
+      {/* Desktop: editor beside chart. Mobile: editor stacks above a
+          full-width chart, whole pane scrolls. */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden willbb-noscrollbar">
+        {/* Code editor (left ~40% on desktop, full-width on mobile) */}
         <div
-          className="flex flex-col"
+          className="flex flex-col w-full md:w-[40%] shrink-0 h-[280px] md:h-auto border-b md:border-b-0 md:border-r"
           style={{
-            width: "40%",
             background: COLORS.bg,
-            borderRight: "1px solid " + COLORS.border,
+            borderColor: COLORS.border,
           }}
         >
           <div
@@ -510,8 +511,8 @@ export default function StrategyLab({
           </div>
         </div>
 
-        {/* Chart + stats (right ~60%) */}
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* Chart + stats (right ~60% on desktop, full-width below on mobile) */}
+        <div className="flex flex-col min-w-0 h-[400px] md:h-auto md:flex-1">
           <div className="flex-1 min-h-0">
             <QuantChart
               bars={liveBars}
@@ -526,7 +527,7 @@ export default function StrategyLab({
           </div>
           {stats && (
             <div
-              className="grid grid-cols-6 gap-[1px] shrink-0"
+              className="grid grid-cols-3 md:grid-cols-6 gap-[1px] shrink-0"
               style={{ background: COLORS.border }}
             >
               <Stat label="Total Return" value={fmtPct(stats.totalReturn)} tone={stats.totalReturn >= 0 ? COLORS.up : COLORS.down} />

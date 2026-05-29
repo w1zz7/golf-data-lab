@@ -21,7 +21,6 @@ export type AppId =
   | "highschool"
   | "speaking"
   | "strategy"
-  | "resume"
   | "contact"
   | "my-computer"
   | "recycle-bin"

@@ -72,12 +72,7 @@ function goToSheet(id: string) {
 const MENU_ITEMS: Record<string, MenuItemDef[]> = {
   File: [
     { label: "Download WillZhang.xlsx (real Excel file)", action: downloadWorkbookXlsx },
-    { label: "Save resume as PDF", action: triggerResumeDownload },
-    { separator: true },
-    { label: "Open Resume.pdf viewer", action: () => openApp("resume") },
     { label: "Open My Computer", action: () => openApp("my-computer") },
-    { separator: true },
-    { label: "Print (download resume)", action: triggerResumeDownload },
     { separator: true },
     { label: "Close", action: closeFocusedWindow },
     { label: "Exit", action: closeFocusedWindow },
@@ -140,14 +135,6 @@ const MENU_ITEMS: Record<string, MenuItemDef[]> = {
   ],
 };
 
-function triggerResumeDownload() {
-  const a = document.createElement("a");
-  a.href = "/resume.pdf";
-  a.download = "WillZhang-Resume.pdf";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
 
 async function downloadWorkbookXlsx() {
   try {
@@ -259,8 +246,8 @@ const TOOLBAR_ICONS: Array<{
 }> = [
   { Icon: IcoNew, title: "New → Contact Notepad", action: () => openApp("contact") },
   { Icon: IcoOpen, title: "Open → My Computer", action: () => openApp("my-computer") },
-  { Icon: IcoSave, title: "Save → download resume", action: triggerResumeDownload },
-  { Icon: IcoPrint, title: "Print → download resume", action: triggerResumeDownload },
+  { Icon: IcoSave, title: "Save → download WillZhang.xlsx", action: downloadWorkbookXlsx },
+  { Icon: IcoPrint, title: "Print → download WillZhang.xlsx", action: downloadWorkbookXlsx },
   { Icon: IcoCut, title: "Cut (copy selected cell ref)", action: copySelectedCellValue },
   { Icon: IcoCopy, title: "Copy (selected cell ref)", action: copySelectedCellValue },
   {

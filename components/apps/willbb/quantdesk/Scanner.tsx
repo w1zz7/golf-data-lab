@@ -123,60 +123,110 @@ export default function Scanner({ onPickSymbol }: { onPickSymbol: (s: string) =>
   // Correlation matrix
   useEffect(() => {
     const ctrl = new AbortController();
-    setLoadingCorr(true);
-    Promise.all(
-      CORR_SYMS.map((sym) =>
-        fetch(`/api/markets/chart?symbol=${sym}&range=3mo&interval=1d`, { signal: ctrl.signal })
-          .then(async (r) => (r.ok ? r.json() : { points: [] }))
-          .then((d: ChartResp) => {
-            const closes = (d.points ?? []).map((p) => p.c);
-            const rets: number[] = [];
-            for (let i = 1; i < closes.length; i++) {
-              if (closes[i - 1] > 0) rets.push((closes[i] - closes[i - 1]) / closes[i - 1]);
-            }
-            return rets;
-          })
-          .catch(() => [] as number[])
+    let attempt = 0;
+    let timer: number | null = null;
+
+    const run = () => {
+      setLoadingCorr(true);
+      Promise.all(
+        CORR_SYMS.map((sym) =>
+          fetch(`/api/markets/chart?symbol=${sym}&range=3mo&interval=1d`, { signal: ctrl.signal })
+            .then(async (r) => (r.ok ? r.json() : { points: [] }))
+            .then((d: ChartResp) => {
+              const closes = (d.points ?? []).map((p) => p.c);
+              const rets: number[] = [];
+              for (let i = 1; i < closes.length; i++) {
+                if (closes[i - 1] > 0) rets.push((closes[i] - closes[i - 1]) / closes[i - 1]);
+              }
+              return rets;
+            })
+            .catch(() => [] as number[])
+        )
       )
-    )
-      .then((retsBySymbol) => {
-        const n = retsBySymbol.length;
-        const matrix: number[][] = [];
-        for (let i = 0; i < n; i++) {
-          const row: number[] = [];
-          for (let j = 0; j < n; j++) row.push(pearson(retsBySymbol[i], retsBySymbol[j]));
-          matrix.push(row);
-        }
-        setCorrelations(matrix);
-        setLoadingCorr(false);
-      })
-      .catch(() => setLoadingCorr(false));
-    return () => ctrl.abort();
+        .then((retsBySymbol) => {
+          if (ctrl.signal.aborted) return;
+          // Cold-load guard: mounting the Scanner fires a burst of chart
+          // requests; under upstream rate-limiting some come back empty,
+          // which would render a misleading all-zero matrix that never
+          // recovers (this effect runs once). If too few series have data,
+          // keep the "loading…" state and retry — the cache warms between
+          // attempts — before settling on whatever we have.
+          const withData = retsBySymbol.filter((r) => r.length > 20).length;
+          if (withData < retsBySymbol.length * 0.6 && attempt < 3) {
+            attempt++;
+            timer = window.setTimeout(run, 2500);
+            return;
+          }
+          const n = retsBySymbol.length;
+          const matrix: number[][] = [];
+          for (let i = 0; i < n; i++) {
+            const row: number[] = [];
+            for (let j = 0; j < n; j++) {
+              // Self-correlation is 1 by definition; pearson() only feeds the
+              // off-diagonals (it returns 0 for an empty series).
+              row.push(i === j ? (retsBySymbol[i].length > 1 ? 1 : 0) : pearson(retsBySymbol[i], retsBySymbol[j]));
+            }
+            matrix.push(row);
+          }
+          setCorrelations(matrix);
+          setLoadingCorr(false);
+        })
+        .catch(() => {
+          if (!ctrl.signal.aborted) setLoadingCorr(false);
+        });
+    };
+
+    run();
+    return () => {
+      ctrl.abort();
+      if (timer != null) window.clearTimeout(timer);
+    };
   }, []);
 
   // Decile-sort universe data: 1y of daily closes for each ticker
   useEffect(() => {
     const ctrl = new AbortController();
-    setLoadingUniverse(true);
-    Promise.all(
-      DECILE_UNIVERSE.map((sym) =>
-        fetch(`/api/markets/chart?symbol=${sym}&range=2y&interval=1d`, { signal: ctrl.signal })
-          .then(async (r) => (r.ok ? r.json() : { points: [], source: null }))
-          .then((d: ChartResp) => ({
-            symbol: sym,
-            closes: (d.points ?? []).map((p) => p.c),
-            source: d.source ?? null,
-          }))
-          .catch(() => ({ symbol: sym, closes: [] as number[], source: null as DataSource }))
+    let attempt = 0;
+    let timer: number | null = null;
+
+    const run = () => {
+      setLoadingUniverse(true);
+      Promise.all(
+        DECILE_UNIVERSE.map((sym) =>
+          fetch(`/api/markets/chart?symbol=${sym}&range=2y&interval=1d`, { signal: ctrl.signal })
+            .then(async (r) => (r.ok ? r.json() : { points: [], source: null }))
+            .then((d: ChartResp) => ({
+              symbol: sym,
+              closes: (d.points ?? []).map((p) => p.c),
+              source: d.source ?? null,
+            }))
+            .catch(() => ({ symbol: sym, closes: [] as number[], source: null as DataSource }))
+        )
       )
-    )
-      .then((rows) => {
-        setUniverseCloses(rows.filter((r) => r.closes.length > 252));
-        setUniverseSource(aggregateSource(rows.map((r) => r.source)));
-        setLoadingUniverse(false);
-      })
-      .catch(() => setLoadingUniverse(false));
-    return () => ctrl.abort();
+        .then((rows) => {
+          if (ctrl.signal.aborted) return;
+          const usable = rows.filter((r) => r.closes.length > 252);
+          // Same cold-burst guard as the correlation matrix: retry if a
+          // rate-limited mount left us with too few usable tickers to sort.
+          if (usable.length < DECILE_UNIVERSE.length * 0.6 && attempt < 3) {
+            attempt++;
+            timer = window.setTimeout(run, 2500);
+            return;
+          }
+          setUniverseCloses(usable);
+          setUniverseSource(aggregateSource(rows.map((r) => r.source)));
+          setLoadingUniverse(false);
+        })
+        .catch(() => {
+          if (!ctrl.signal.aborted) setLoadingUniverse(false);
+        });
+    };
+
+    run();
+    return () => {
+      ctrl.abort();
+      if (timer != null) window.clearTimeout(timer);
+    };
   }, []);
 
   const sectorSorted = useMemo(() => {
@@ -191,8 +241,9 @@ export default function Scanner({ onPickSymbol }: { onPickSymbol: (s: string) =>
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: COLORS.bg, fontFamily: FONT_UI }}>
-      {/* Top: heatmaps + correlation */}
-      <div className="grid grid-cols-2 gap-[1px]" style={{ background: COLORS.border }}>
+      {/* Top: heatmaps + correlation. Stacks to one column on mobile so the
+          heatmap tiles and the 12×12 correlation matrix each get full width. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[1px]" style={{ background: COLORS.border }}>
         <div style={{ background: COLORS.bg, padding: 12 }}>
           <SectionTitle>Watchlist Heatmap (top 48 · day % change)</SectionTitle>
           <HeatmapGrid quotes={heatmapQuotes} onPick={onPickSymbol} />
@@ -247,7 +298,7 @@ export default function Scanner({ onPickSymbol }: { onPickSymbol: (s: string) =>
             building universe (32 chart fetches)…
           </div>
         ) : (
-          <div className="grid grid-cols-12 gap-[1px]" style={{ background: COLORS.border }}>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-[1px]" style={{ background: COLORS.border }}>
             {/* Decile bar chart */}
             <div style={{ gridColumn: "span 4", background: COLORS.panel, padding: 10 }}>
               <SectionTitle>Q1 → Q5 mean forward 21d return</SectionTitle>
@@ -323,7 +374,8 @@ function HeatmapGrid({ quotes, onPick }: { quotes: QuoteLite[]; onPick: (s: stri
   }
   const sorted = [...quotes].sort((a, b) => (b.changePct ?? -999) - (a.changePct ?? -999));
   return (
-    <div className="grid gap-[2px]" style={{ gridTemplateColumns: "repeat(8, 1fr)" }}>
+    // Fewer columns on phones so each ticker tile stays legible; 8-wide on desktop.
+    <div className="grid gap-[2px] grid-cols-4 min-[480px]:grid-cols-6 md:grid-cols-8">
       {sorted.map((q) => {
         const pct = q.changePct ?? 0;
         const intensity = Math.min(1, Math.abs(pct) / 5);

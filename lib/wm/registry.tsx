@@ -69,10 +69,6 @@ const TradingStrategy = dynamic(
   () => import("@/components/apps/strategy/TradingStrategy"),
   { ssr: false }
 );
-const ResumeViewer = dynamic(
-  () => import("@/components/apps/resume/ResumeViewer"),
-  { ssr: false }
-);
 const ContactNotepad = dynamic(
   () => import("@/components/apps/contact/Notepad"),
   { ssr: false }
@@ -243,15 +239,6 @@ export const APPS: Record<AppId, AppDef> = {
     defaultSize: { w: 860, h: 680 },
     minSize: { w: 520, h: 420 },
     component: TradingStrategy,
-    singleton: true,
-  },
-  resume: {
-    appId: "resume",
-    title: "Resume.pdf - Adobe Viewer",
-    iconUrl: "/icons/pdf.svg",
-    defaultSize: { w: 820, h: 680 },
-    minSize: { w: 480, h: 380 },
-    component: ResumeViewer,
     singleton: true,
   },
   contact: {

@@ -13,7 +13,7 @@ export const leadership: SheetData = {
   ],
   frozenRows: 1,
   rowHeight: 28,
-  maxRow: 26,
+  maxRow: 9,
   maxCol: 4,
   initialSelection: "A2",
   cells: {
@@ -54,42 +54,5 @@ export const leadership: SheetData = {
         "Selective LeBow College of Business cohort - market research and portfolio construction.",
     },
 
-    A11: {
-      value: "Leadership Footprint",
-      bold: true,
-      bg: H,
-      merged: { colspan: 4 },
-    },
-
-    A12: { value: "Capital pool (evaluated 100+ proposals)" },
-    B12: {
-      value: "$100,000+",
-      formula: "=SUM(_tgif!B2:B12)",
-      bold: true,
-      align: "right",
-    },
-
-    A13: { value: "Students reached (6 invited talks)" },
-    B13: {
-      value: "1,400+",
-      formula: "=SUM(_talks!B2:B7)",
-      bold: true,
-      align: "right",
-    },
-
-    A14: { value: "Social audience planned for (4 platforms)" },
-    B14: {
-      value: "14.3M+",
-      formula: "=MAX(_channels!B2:B5)",
-      bold: true,
-      align: "right",
-    },
-
-    A15: { value: "CodeLab tracks (ML · AI Studio · SubAgent)" },
-    B15: {
-      value: "3",
-      bold: true,
-      align: "right",
-    },
   },
 };

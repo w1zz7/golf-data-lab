@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Titlebar } from "./Titlebar";
 import { ResizeHandles } from "./ResizeHandles";
+import { AppErrorBoundary } from "./AppErrorBoundary";
 import {
   useWindowStore,
   clampPositionToViewport,
@@ -81,7 +82,11 @@ export function Window({ window: win }: WindowProps) {
           onClose={() => closeWindow(win.id)}
         />
         <div className="flex-1 min-h-0 overflow-hidden relative">
-          {Content ? <Content window={win} /> : null}
+          {Content ? (
+            <AppErrorBoundary label={win.title}>
+              <Content window={win} />
+            </AppErrorBoundary>
+          ) : null}
         </div>
       </div>
     );
@@ -124,7 +129,11 @@ export function Window({ window: win }: WindowProps) {
         onClose={() => closeWindow(win.id)}
       />
       <div className="flex-1 min-h-0 overflow-hidden relative">
-        {Content ? <Content window={win} /> : null}
+        {Content ? (
+          <AppErrorBoundary label={win.title}>
+            <Content window={win} />
+          </AppErrorBoundary>
+        ) : null}
       </div>
       {!isMax && !win.noResize && <ResizeHandles windowId={win.id} windowRef={ref} />}
     </div>

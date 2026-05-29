@@ -77,7 +77,7 @@ export default async function OGImage() {
               WILL ZHANG
             </div>
             <div style={{ fontSize: 22, color: "#444", marginBottom: 24 }}>
-              Drexel · B.S. Business Admin (Analytics + Marketing) · GPA 4.0 ·
+              Drexel · B.S. Business Admin (Finance + MIS) · GPA 4.0 ·
               Philadelphia, PA
             </div>
 

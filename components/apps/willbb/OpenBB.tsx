@@ -486,6 +486,10 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
     >
       {!booted && (
         <BootScreen
+          // Hold the boot until the dashboard's headline data (the index
+          // ticker strip) has actually loaded — the user never lands on a
+          // half-populated terminal. Capped by BootScreen's internal timeout.
+          dataReady={stripQuotes.length > 0}
           onComplete={() => {
             setBooted(true);
             // Persist the boot so subsequent terminal opens (e.g., user
@@ -588,13 +592,13 @@ function Header({
   const tickAge = lastTick === 0 ? null : Math.max(0, Math.floor((now.getTime() - lastTick) / 1000));
   return (
     <div
-      className="flex items-center justify-between px-[14px] py-[8px] border-b shrink-0"
+      className="flex items-center justify-between gap-x-[10px] gap-y-[4px] flex-wrap px-[14px] py-[8px] border-b shrink-0"
       style={{
         background: COLORS.panel,
         borderColor: COLORS.border,
       }}
     >
-      <div className="flex items-center gap-[10px]">
+      <div className="flex items-center gap-[10px] min-w-0">
         <span
           className="text-[16px] font-semibold tracking-[-0.01em]"
           style={{ color: COLORS.text }}
@@ -606,20 +610,22 @@ function Header({
           className="h-[14px] w-[1px]"
           style={{ background: COLORS.border }}
         />
+        {/* Hide the long subtitle on very narrow (phone) widths so the live
+            controls on the right never get squeezed off-screen. */}
         <span
-          className="text-[11px] uppercase tracking-[0.18em]"
+          className="text-[11px] uppercase tracking-[0.18em] hidden min-[420px]:inline"
           style={{ color: COLORS.textDim, fontFamily: FONT_UI }}
         >
           Markets Terminal
         </span>
         <span
-          className="text-[10px] uppercase tracking-[0.18em]"
+          className="text-[10px] uppercase tracking-[0.18em] hidden min-[420px]:inline"
           style={{ color: COLORS.textFaint, fontFamily: FONT_MONO }}
         >
           v1.0
         </span>
       </div>
-      <div className="flex items-center gap-[10px] text-[12px]">
+      <div className="flex items-center gap-[10px] text-[12px] shrink-0">
         {/* Unified data-source badge — covers LIVE / DELAYED / CACHED / SYNTHETIC */}
         <SourceBadge source={liveSource} size="sm" ageSeconds={tickAge} />
         <span style={{ color: COLORS.textDim, fontFamily: FONT_MONO }}>
@@ -715,7 +721,7 @@ function TabBar({ tab, setTab }: { tab: TabId; setTab: (t: TabId) => void }) {
   const RESEARCH_RED = "#f0686a";
   return (
     <div
-      className="flex shrink-0"
+      className="flex shrink-0 overflow-x-auto willbb-noscrollbar"
       style={{
         borderBottom: "1px solid " + COLORS.border,
         background: COLORS.panel,
@@ -730,7 +736,7 @@ function TabBar({ tab, setTab }: { tab: TabId; setTab: (t: TabId) => void }) {
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className="px-[18px] py-[9px] text-[12px] tracking-[0.06em] flex items-center gap-[8px] relative"
+            className="px-[18px] py-[9px] text-[12px] tracking-[0.06em] flex items-center gap-[8px] relative shrink-0 whitespace-nowrap"
             style={{
               color: isResearch
                 ? active ? "#ffffff" : RESEARCH_RED
@@ -791,12 +797,14 @@ function MarketsTab({
   const byKey = new Map(watchQuotes.map((q) => [q.symbol, q]));
   const focusQ = byKey.get(focused);
   return (
-    <div className="flex h-full min-h-0">
+    // Desktop: watchlist column beside the chart. Mobile: watchlist becomes a
+    // capped-height list on top, chart pane full-width below.
+    <div className="flex flex-col md:flex-row h-full min-h-0">
       {/* Watchlist */}
       <div
-        className="w-[260px] shrink-0 overflow-y-auto"
+        className="w-full md:w-[260px] shrink-0 overflow-y-auto max-h-[32%] md:max-h-none border-b md:border-b-0 md:border-r"
         style={{
-          borderRight: "1px solid " + COLORS.border,
+          borderColor: COLORS.border,
           background: COLORS.panelAlt,
         }}
       >

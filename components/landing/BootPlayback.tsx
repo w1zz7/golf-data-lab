@@ -32,6 +32,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useWindowStore } from "@/lib/wm/store";
 import { useMediaQuery } from "@/lib/wm/useMediaQuery";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Splash3DScene } from "./Splash3DScene";
 import {
   BIO_DURATION_MS,
@@ -512,7 +513,13 @@ function SplashStage() {
           The Canvas is transparent so the painterly cloud sky behind it
           still reads as the period-correct LOGO.SYS backdrop. */}
       <div className="absolute inset-0">
-        <Splash3DScene reduced={isMobile} />
+        {/* If the WebGL scene throws (lost GPU context, driver can't handle
+            the post-processing stack, etc.), fall back to the static 2D
+            Win98 flag + wordmark over the cloud backdrop instead of taking
+            the whole boot down. The stage still auto-advances on its timer. */}
+        <ErrorBoundary label="Splash3DScene" fallback={<Static2DSplash />}>
+          <Splash3DScene reduced={isMobile} />
+        </ErrorBoundary>
       </div>
 
       {/* Bottom-right shifting gradient bar — the LOGO.SYS palette-rotation
@@ -582,6 +589,44 @@ function CloudStrata() {
 /** 3D-style Windows flag — four panels (red top-left, green top-right,
  *  blue bottom-left, yellow bottom-right) with a wave on the leading edge.
  *  Done with a SVG path per panel + inner shadow for the "wavy" suggestion. */
+/** Static 2D splash — the no-WebGL fallback for Splash3DScene. Centers the
+ *  classic flag + "Microsoft / Windows 98" wordmark, matching the period
+ *  LOGO.SYS layout. Rendered over the existing CloudStrata backdrop. */
+function Static2DSplash() {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center select-none">
+      <Win98FlagLogo size={150} />
+      <div className="mt-5 text-center" style={{ lineHeight: 1.05 }}>
+        <div
+          style={{
+            fontFamily: FONT_FRANKLIN,
+            fontSize: 22,
+            fontWeight: 400,
+            color: "#fff",
+            textShadow: "0 1px 3px rgba(0,0,0,0.45)",
+            letterSpacing: "0.01em",
+          }}
+        >
+          Microsoft
+        </div>
+        <div
+          style={{
+            fontFamily: FONT_FRANKLIN,
+            fontSize: 52,
+            fontWeight: 700,
+            color: "#fff",
+            textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+            letterSpacing: "-0.01em",
+            marginTop: 2,
+          }}
+        >
+          Windows 98
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Win98FlagLogo({ size }: { size: number }) {
   const w = size;
   const h = size * 0.85;

@@ -615,7 +615,7 @@ export default function About({ window: _ }: { window: WindowState }) {
           }}
         >
           <Stat label="GPA" value="4.0 / 4.0" hint="Dean's List · Dec 2025 – Present" />
-          <Stat label="School" value="Drexel LeBow" hint="B.S. Business Admin · Analytics + Marketing" />
+          <Stat label="School" value="Drexel LeBow" hint="B.S. Business Admin · Finance + MIS" />
           <Stat label="Grad" value="June 2029" hint="Fall / Winter co-op track" />
           <Stat label="Location" value="Philadelphia, PA" hint="+ SoCal / China travel" />
         </div>
@@ -884,13 +884,6 @@ export default function About({ window: _ }: { window: WindowState }) {
           onClick={() => openApp("speaking")}
         >
           Public Speaking
-        </button>
-        <button
-          type="button"
-          className="win-btn"
-          onClick={() => openApp("resume")}
-        >
-          Resume.pdf
         </button>
         <button
           type="button"

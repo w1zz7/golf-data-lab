@@ -55,6 +55,48 @@ export function MobilePortfolio() {
         Updated April 2026 · shipped while shipping
       </div>
 
+      {/* Flagship launcher — the WillBB terminal is the proudest project, so it
+          gets a prominent full-width tap target on mobile rather than being
+          buried inside a spreadsheet cell. */}
+      <button
+        type="button"
+        onClick={() => openApp("willbb")}
+        className="shrink-0 flex items-center gap-[10px] px-[12px] py-[10px] text-left border-b-2 border-[#000080]"
+        style={{
+          background:
+            "linear-gradient(135deg, #001a4d 0%, #0a3a8c 60%, #1084d0 100%)",
+          color: "#fff",
+        }}
+      >
+        <img
+          src="/icons/willbb.svg"
+          alt=""
+          width={38}
+          height={38}
+          className="shrink-0"
+          style={{ imageRendering: "pixelated" }}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-[17px] leading-tight flex items-center gap-[8px] flex-wrap">
+            WillBB Markets Terminal
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: "#f5c518",
+                letterSpacing: "0.06em",
+              }}
+            >
+              ★ FLAGSHIP
+            </span>
+          </div>
+          <div className="text-[13px] leading-snug" style={{ color: "#cfe2ff" }}>
+            Bloomberg-style quant terminal — live data, equity research, quant
+            lab. Tap to launch →
+          </div>
+        </div>
+      </button>
+
       {/* Sheet tab strip - scrollable horizontal */}
       <div
         className="flex items-end h-[26px] win-raised border-b border-[#808080] overflow-x-auto win-scroll shrink-0"
@@ -85,11 +127,6 @@ export function MobilePortfolio() {
         className="win-raised flex items-stretch h-[48px] border-t-2 border-[#808080] shrink-0"
         style={{ gap: 0 }}
       >
-        <NavBtn
-          label="Resume"
-          glyph="📄"
-          onClick={() => openApp("resume")}
-        />
         <NavBtn label="Copy Email" glyph="📋" onClick={copyEmail} />
         <NavBtn
           label="LinkedIn"
