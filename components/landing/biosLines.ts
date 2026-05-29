@@ -85,29 +85,33 @@ export const BIO_LINES: BootLine[] = [
   },
   {
     delayMs: 1500,
-    text: "I'm drawn to the intersection of markets, technology, and clear thinking.",
+    text: "I live at the intersection of **markets, research, and technology** — turning data into an edge.",
   },
   {
     delayMs: 2300,
-    text: "I love building things that make a real difference for the people who use them.",
+    text: "**Trading** taught me discipline over dopamine — process over the next green candle.",
   },
   {
     delayMs: 3100,
-    text: "I believe in working honestly, staying curious, and shipping work that actually matters.",
+    text: "**Golf** taught me how to perform under pressure, one shot at a time.",
   },
   {
     delayMs: 3900,
-    text: "Outside of school you'll usually find me trading, writing, or out on a golf course.",
+    text: "I believe in learning fast, staying curious, and shipping work that actually matters.",
   },
   {
     delayMs: 4700,
+    text: "Outside of class you'll usually find me trading, writing market recaps, or out on a golf course.",
+  },
+  {
+    delayMs: 5500,
     text: "Thanks for stopping by — please take a look around.",
     status: "ok",
   },
 ];
 
-/** Total Stage 3 duration: last delay + a final 700ms pause to let it sit. */
-export const BIO_DURATION_MS = 5400;
+/** Total Stage 3 duration: last delay (5500) + a final 700ms pause to let it sit. */
+export const BIO_DURATION_MS = 6200;
 
 /* ------------------------------------------------------------------ */
 /* Stage 4 — fade to desktop                                           */
