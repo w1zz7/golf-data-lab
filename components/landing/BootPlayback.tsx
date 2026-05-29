@@ -720,11 +720,11 @@ function BioStage({ bioReady }: { bioReady: boolean }) {
           left: "50%",
           top: "50%",
           transform: "translate(-50%, -50%)",
-          // Wider + taller frame than the legacy 900×560 so the bumped
-          // terminal font (22 px, was 14 px) has horizontal breathing room
-          // for long sentences and vertical room for all 7 lines + the
-          // header + the trailing prompt. 1100×680 still caps at 90vw/85vh.
-          width: "min(1100px, 90vw)",
+          // Wide frame so each bio sentence fits on ONE line (no two-line
+          // wraps) at the large terminal font. Widened 1100 -> 1400 and the
+          // font is now a clamp() that stays big on desktop but scales down on
+          // narrower viewports to keep every line single-row. Caps at 96vw/85vh.
+          width: "min(1440px, 97vw)",
           height: "min(680px, 85vh)",
           background: COLORS.win.chromeBg,
           // Win98 raised window border: 2px outer dance.
@@ -756,7 +756,7 @@ function BioStage({ bioReady }: { bioReady: boolean }) {
           }}
         >
           <MsDosIcon />
-          <span style={{ flex: 1 }}>MS-DOS Prompt — WHO-IS-WILL.BAT</span>
+          <span style={{ flex: 1 }}>MS-DOS Prompt: WHO-IS-WILL.BAT</span>
           <Win98ChromeButton label="_" />
           <Win98ChromeButton label="□" />
           <Win98ChromeButton label="×" emphasised />
@@ -830,18 +830,18 @@ function BioStage({ bioReady }: { bioReady: boolean }) {
           ))}
         </div>
 
-        {/* The actual MS-DOS terminal pane — sunken, black bg, silver text.
-            Font bumped from 14 → 22 px (line-height 20 → 30) so the
-            who-is-will.txt narrative is legible from across a room — the
-            recruiter shouldn't have to lean in to read the intro. */}
+        {/* The actual MS-DOS terminal pane: sunken, black bg, silver text.
+            Font is a clamp() so the who-is-will.txt narrative stays large and
+            legible (up to 22 px on desktop) while scaling down on narrower
+            viewports so every sentence still fits on a single line. */}
         <div
           className="flex-1 min-h-0 overflow-hidden relative"
           style={{
             background: COLORS.prompt.bg,
             color: COLORS.prompt.fg,
             fontFamily: FONT_DOS,
-            fontSize: 22,
-            lineHeight: "30px",
+            fontSize: "clamp(15px, 1.45vw, 21px)",
+            lineHeight: 1.4,
             padding: "14px 18px",
             // Sunken inner border.
             boxShadow:

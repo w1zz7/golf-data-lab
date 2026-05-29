@@ -107,7 +107,7 @@ function styleFor(src: DataSource): BadgeStyle {
       };
     default:
       return {
-        label: "—",
+        label: "-",
         color: COLORS.textFaint,
         bg: "rgba(138,138,144,0.06)",
         pulse: false,

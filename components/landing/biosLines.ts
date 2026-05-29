@@ -76,7 +76,7 @@ export const SPLASH_DURATION_MS = 3500;
 export const BIO_LINES: BootLine[] = [
   {
     delayMs: 0,
-    text: "Hello — my name is **Will Zhang**, and this is my portfolio.",
+    text: "Hello. My name is **Will Zhang**, and this is my portfolio.",
     status: "info",
   },
   {
@@ -85,11 +85,11 @@ export const BIO_LINES: BootLine[] = [
   },
   {
     delayMs: 1500,
-    text: "I live at the intersection of **markets, research, and technology** — turning data into an edge.",
+    text: "I live at the intersection of **markets, research, and technology**, turning data into an edge.",
   },
   {
     delayMs: 2300,
-    text: "**Trading** taught me discipline over dopamine — process over the next green candle.",
+    text: "**Trading** taught me discipline over dopamine: process over the next green candle.",
   },
   {
     delayMs: 3100,
@@ -105,7 +105,7 @@ export const BIO_LINES: BootLine[] = [
   },
   {
     delayMs: 5500,
-    text: "Thanks for stopping by — please take a look around.",
+    text: "Thanks for stopping by. Please take a look around.",
     status: "ok",
   },
 ];

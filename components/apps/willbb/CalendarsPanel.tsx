@@ -32,7 +32,7 @@ interface IPORow {
 }
 
 function fmtDateUS(s: string): string {
-  if (!s) return "—";
+  if (!s) return "-";
   // AV returns YYYY-MM-DD
   const d = new Date(s + "T12:00:00");
   if (isNaN(d.getTime())) return s;
@@ -268,7 +268,7 @@ export default function CalendarsPanel({ onPick }: { onPick: (s: string) => void
               const range =
                 Number.isFinite(lo) && Number.isFinite(hi)
                   ? `$${lo.toFixed(2)} - $${hi.toFixed(2)}`
-                  : "—";
+                  : "-";
               return (
                 <div
                   key={`${e.symbol}-${e.ipoDate}-${i}`}

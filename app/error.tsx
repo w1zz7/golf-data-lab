@@ -54,7 +54,7 @@ export default function Error({
             fontWeight: 700,
           }}
         >
-          willOS — Unexpected Error
+          willOS: Unexpected Error
         </div>
         <div className="p-5" style={{ fontSize: 13, color: "#000" }}>
           <div className="flex items-start gap-3 mb-4">

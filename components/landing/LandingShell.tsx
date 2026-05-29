@@ -106,7 +106,7 @@ export function LandingShell() {
         transition: "opacity 220ms ease-out",
         cursor: "pointer",
       }}
-      aria-label="Welcome — click to enter"
+      aria-label="Welcome. Click to enter"
     >
       {/* CRT scanlines — every 3px, very subtle. */}
       <div

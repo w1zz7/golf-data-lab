@@ -298,7 +298,7 @@ export function NewsAndSentimentView({ symbol }: { symbol: string }) {
                       letterSpacing: "0.06em",
                       whiteSpace: "nowrap",
                     }}
-                    title={`Score: ${score.toFixed(3)} · Relevance: ${ts?.relevance_score ?? "—"}`}
+                    title={`Score: ${score.toFixed(3)} · Relevance: ${ts?.relevance_score ?? "-"}`}
                   >
                     {label.toUpperCase()} {Number.isFinite(score) ? `· ${score.toFixed(2)}` : ""}
                   </div>
@@ -831,7 +831,7 @@ export function TranscriptView({ symbol }: { symbol: string }) {
                         padding: "1px 6px",
                       }}
                     >
-                      {Number.isFinite(s) ? (s >= 0 ? "+" : "") + s.toFixed(3) : "—"}
+                      {Number.isFinite(s) ? (s >= 0 ? "+" : "") + s.toFixed(3) : "-"}
                     </span>
                   </div>
                   <div

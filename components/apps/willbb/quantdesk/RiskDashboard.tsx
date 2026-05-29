@@ -272,7 +272,7 @@ export default function RiskDashboard({
             ir={rollingIR}
           />
         </Panel>
-        <Panel title={`Realized vol — Yang-Zhang vs close-to-close · ${symbol}`}>
+        <Panel title={`Realized vol: Yang-Zhang vs close-to-close · ${symbol}`}>
           <DualRollingChart yz={rvYZ} cc={rvCC} />
         </Panel>
         <Panel title={`Drawdown · ${symbol}`}>
@@ -345,7 +345,7 @@ export default function RiskDashboard({
             <EquityCurveMini equity={lastBacktest.equity} startCapital={lastBacktest.stats.startCapital} />
           ) : (
             <div style={{ color: COLORS.textFaint, fontSize: 11, fontFamily: FONT_MONO, padding: 14, lineHeight: 1.5 }}>
-              No backtest run yet. Switch to <strong style={{ color: COLORS.text }}>Alpha Lab</strong>, pick a preset, and click <strong style={{ color: COLORS.brand }}>RUN BACKTEST</strong> — the equity curve will appear here.
+              No backtest run yet. Switch to <strong style={{ color: COLORS.text }}>Alpha Lab</strong>, pick a preset, and click <strong style={{ color: COLORS.brand }}>RUN BACKTEST</strong>. The equity curve will appear here.
             </div>
           )}
         </Panel>
@@ -711,7 +711,7 @@ function VarianceDecomp({ result }: { result: FactorRegressionResult }) {
         <Stat label="Idio σ (daily)" value={fmtPct(result.residualVol)} tone={COLORS.textDim} />
       </div>
       <div style={{ fontSize: 10, color: COLORS.textFaint, marginTop: 10, lineHeight: 1.5, fontFamily: FONT_UI }}>
-        High idiosyncratic share (&gt;50%) means most variance is stock-specific, not factor-driven — typical of small-cap / event-driven names.
+        High idiosyncratic share (&gt;50%) means most variance is stock-specific, not factor-driven, which is typical of small-cap / event-driven names.
         High systematic share (&gt;70%) means a factor-replicating ETF would explain most of the move.
       </div>
     </div>

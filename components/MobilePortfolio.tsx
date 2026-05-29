@@ -91,7 +91,7 @@ export function MobilePortfolio() {
             </span>
           </div>
           <div className="text-[13px] leading-snug" style={{ color: "#cfe2ff" }}>
-            Bloomberg-style quant terminal — live data, equity research, quant
+            Bloomberg-style quant terminal: live data, equity research, quant
             lab. Tap to launch →
           </div>
         </div>

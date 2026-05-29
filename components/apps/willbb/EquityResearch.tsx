@@ -24,6 +24,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import TechnicalsView from "./TechnicalsView";
 import { NewsAndSentimentView, SmartMoneyView, TranscriptView } from "./EquityAlphaViews";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Refresh nonce - bump from EquityResearch and every useEquityModule
 // re-fetches. Used by the manual "Refresh" button.
@@ -223,20 +224,41 @@ export default function EquityResearch({
       )}
       <SubTabBar sub={sub} setSub={setSub} />
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {sub === "profile" && <ProfileView symbol={symbol} />}
-        {sub === "technicals" && <TechnicalsView symbol={symbol} />}
-        {sub === "statistics" && <StatisticsView symbol={symbol} />}
-        {sub === "income" && <FinancialView symbol={symbol} module="income" />}
-        {sub === "balance" && <FinancialView symbol={symbol} module="balance" />}
-        {sub === "cashflow" && <FinancialView symbol={symbol} module="cashflow" />}
-        {sub === "analysts" && <AnalystsView symbol={symbol} />}
-        {sub === "earnings" && <EarningsView symbol={symbol} />}
-        {sub === "holders" && <HoldersView symbol={symbol} />}
-        {sub === "smartmoney" && <SmartMoneyView symbol={symbol} />}
-        {sub === "transcript" && <TranscriptView symbol={symbol} />}
-        {sub === "dividends" && <DividendsView symbol={symbol} />}
-        {sub === "options" && <OptionsView symbol={symbol} />}
-        {sub === "news" && <NewsAndSentimentView symbol={symbol} />}
+        {/* Each view parses a different upstream module shape; if one throws on
+            an unexpected payload (e.g. a searched symbol whose live data is
+            shaped differently than the seed), contain it to this pane instead
+            of taking down the whole terminal. Keyed on `sub` so switching tabs
+            clears a stale error. */}
+        <ErrorBoundary
+          key={sub}
+          label={`equity:${sub}`}
+          fallback={
+            <div
+              className="px-[16px] py-[16px]"
+              style={{ color: COLORS.textDim, fontFamily: FONT_MONO, fontSize: 12, lineHeight: 1.6 }}
+            >
+              This view couldn&apos;t render data for{" "}
+              <span style={{ color: COLORS.text }}>{symbol}</span>. The feed may
+              be rate-limited or this symbol may not report it. Try another tab,
+              or hit Refresh.
+            </div>
+          }
+        >
+          {sub === "profile" && <ProfileView symbol={symbol} />}
+          {sub === "technicals" && <TechnicalsView symbol={symbol} />}
+          {sub === "statistics" && <StatisticsView symbol={symbol} />}
+          {sub === "income" && <FinancialView symbol={symbol} module="income" />}
+          {sub === "balance" && <FinancialView symbol={symbol} module="balance" />}
+          {sub === "cashflow" && <FinancialView symbol={symbol} module="cashflow" />}
+          {sub === "analysts" && <AnalystsView symbol={symbol} />}
+          {sub === "earnings" && <EarningsView symbol={symbol} />}
+          {sub === "holders" && <HoldersView symbol={symbol} />}
+          {sub === "smartmoney" && <SmartMoneyView symbol={symbol} />}
+          {sub === "transcript" && <TranscriptView symbol={symbol} />}
+          {sub === "dividends" && <DividendsView symbol={symbol} />}
+          {sub === "options" && <OptionsView symbol={symbol} />}
+          {sub === "news" && <NewsAndSentimentView symbol={symbol} />}
+        </ErrorBoundary>
       </div>
     </div>
     </EquityRefreshContext.Provider>

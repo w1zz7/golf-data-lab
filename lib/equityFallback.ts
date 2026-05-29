@@ -885,7 +885,7 @@ function inferSector(symbol: string): { sector: string; industry: string; summar
   if (CONSUMER.has(u)) return { sector: "Consumer", industry: "Discretionary / Restaurants / Apparel", summary: `${u} sells consumer products or services.` };
   if (COMM.has(u)) return { sector: "Communication Services", industry: "Media / Social", summary: `${u} operates in communication services, media, or advertising.` };
   if (INDUSTRIAL.has(u)) return { sector: "Industrials", industry: "Aerospace / Logistics / Equipment", summary: `${u} operates in industrials including aerospace, logistics, or heavy equipment.` };
-  return { sector: "—", industry: "—", summary: `${u} is a publicly traded company.` };
+  return { sector: "-", industry: "-", summary: `${u} is a publicly traded company.` };
 }
 
 /**

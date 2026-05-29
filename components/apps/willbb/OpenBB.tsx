@@ -28,6 +28,7 @@ import TradingViewChart, { type TVInterval, type TVRange } from "./TradingViewCh
 import BootScreen from "./BootScreen";
 import { SourceBadge, type DataSource, aggregateSource } from "./SourceBadge";
 import { prefetchChart } from "@/lib/chartCache";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Lazy-loaded heavy panels — they don't ship in the Markets-tab initial chunk.
 // EquityResearch (multi-tab equity views), Discovery (screeners + macro +
@@ -532,6 +533,19 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
       <TabBar tab={tab} setTab={setTab} />
 
       <div className="flex-1 min-h-0 overflow-hidden">
+        <ErrorBoundary
+          key={tab}
+          label={`willbb:${tab}`}
+          fallback={
+            <div
+              className="px-[16px] py-[16px]"
+              style={{ color: COLORS.textDim, fontFamily: FONT_MONO, fontSize: 12, lineHeight: 1.6 }}
+            >
+              This tab hit a problem loading its data. The rest of the terminal
+              still works. Try another tab, or hit Refresh.
+            </div>
+          }
+        >
         {tab === "markets" && (
           <MarketsTab
             watchlist={watchlist}
@@ -563,6 +577,7 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
             setSymbol={setFocused}
           />
         )}
+        </ErrorBoundary>
       </div>
 
       <StatusBar focused={focused} chart={chart} loading={loadingChart} />
@@ -865,7 +880,7 @@ function MarketsTab({
               }}
             />
             <span style={{ flex: 1 }}>
-              <strong style={{ color: COLORS.brand }}>Loading market data —</strong>{" "}
+              <strong style={{ color: COLORS.brand }}>Loading market data:</strong>{" "}
               first fetch for a new symbol can take a few seconds while we
               warm the cache. Subsequent loads are instant.
             </span>

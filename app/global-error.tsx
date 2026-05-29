@@ -54,7 +54,7 @@ export default function GlobalError({
               padding: "4px 8px",
             }}
           >
-            willOS — System Error
+            willOS: System Error
           </div>
           <div style={{ padding: 20, fontSize: 13, color: "#000" }}>
             <p style={{ fontWeight: 700, marginTop: 0 }}>

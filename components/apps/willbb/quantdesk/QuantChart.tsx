@@ -1296,7 +1296,7 @@ export default function QuantChart({
             e.stopPropagation();
             jumpToLatest();
           }}
-          title="Latest bar is off-screen — click to jump to right edge (or press End)."
+          title="Latest bar is off-screen. Click to jump to right edge (or press End)."
           style={{
             position: "absolute",
             top: 8,

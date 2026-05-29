@@ -35,10 +35,26 @@ const CARDS: Card[] = [
     appId: "willbb",
     label: "WillBB Markets Terminal",
     summary:
-      "A Bloomberg-style quant terminal I built end-to-end: live multi-asset data with 4-tier failover, a 14-tab equity research suite, and a quant lab — PSR/DSR, Carhart 4-factor, Newey-West HAC, walk-forward CV, and a strategy backtester.",
+      "A Bloomberg-style quant terminal I built end-to-end: live multi-asset data with 4-tier failover, a 14-tab equity research suite, and a quant lab with PSR/DSR, Carhart 4-factor, Newey-West HAC, walk-forward CV, and a strategy backtester.",
     metric: "Live terminal · custom quant engine · the project I'm most proud of",
     icon: "/icons/willbb.svg",
     featured: true,
+  },
+  {
+    appId: "golfdatalab",
+    label: "Golf Data Lab",
+    summary:
+      "Interactive analysis of three golf datasets, including 36,864 rows of PGA Tour strokes-gained data. Four tabs: exploratory analysis, a 3D Three.js scatter plot, an in-browser logistic-regression predictor, and SG-Total leaderboards.",
+    metric: "3 datasets · 45k+ rows · in-browser ML + 3D viz",
+    icon: "/icons/golf-data-lab.svg",
+  },
+  {
+    appId: "strategy",
+    label: "Trading Strategy",
+    summary:
+      "My full trading playbook: fundamentals, trend and moving averages, momentum (RSI/MACD), volume, and support and resistance, plus a mean-reversion system and an options setups hierarchy.",
+    metric: "Trend · momentum · mean reversion · options",
+    icon: "/icons/strategy.svg",
   },
   {
     appId: "stock-portfolio",

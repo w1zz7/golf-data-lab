@@ -1,14 +1,17 @@
 "use client";
 
 /**
- * AppErrorBoundary — contains a crashing app to its own window.
+ * AppErrorBoundary — contains a crashing app to its own window, and tries to
+ * self-heal first.
  *
  * Without a boundary, a single component throw (e.g. a data-not-ready race in
  * the WillBB terminal) unmounts the whole React tree and Next.js shows the
- * full-screen "Application error: a client-side exception has occurred." With
- * this boundary the failure is scoped to one window: the rest of the desktop
- * keeps working and the user gets a period-correct Win98 error dialog with a
- * one-click "Try again" that remounts just that app.
+ * full-screen "Application error: a client-side exception has occurred." This
+ * boundary scopes the failure to one window AND auto-recovers: a transient
+ * crash (data wasn't ready on mount) just remounts the subtree a couple times
+ * behind a subtle "Reconnecting" placeholder, so the user never sees an error
+ * dialog. Only a crash that keeps reproducing after the retries surfaces the
+ * period-correct Win98 dialog with a manual "Try again".
  *
  * React error boundaries must be class components — there is no hook
  * equivalent for getDerivedStateFromError / componentDidCatch.
@@ -24,30 +27,63 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
-  /** Bumped on "Try again" to force a fresh mount of the subtree. */
+  /** Bumped on retry to force a fresh mount of the subtree. */
   resetKey: number;
 }
 
-export class AppErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null, resetKey: 0 };
+const MAX_AUTO_RETRIES = 2;
+const AUTO_RETRY_DELAY_MS = 800;
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
-    return { hasError: true, error };
+export class AppErrorBoundary extends Component<Props, State> {
+  state: State = { hasError: false, resetKey: 0 };
+  private autoRetries = 0;
+  private retryTimer: number | null = null;
+
+  static getDerivedStateFromError(): Partial<State> {
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Surface to the console for debugging; never rethrow.
     // eslint-disable-next-line no-console
-    console.error(`[AppErrorBoundary${this.props.label ? ` · ${this.props.label}` : ""}]`, error, info.componentStack);
+    console.error(
+      `[AppErrorBoundary${this.props.label ? ` · ${this.props.label}` : ""}]`,
+      error,
+      info.componentStack
+    );
+    // Self-heal transient errors: remount the subtree after a short delay.
+    // Most terminal crashes are mount-time data races that vanish on retry.
+    if (this.autoRetries < MAX_AUTO_RETRIES) {
+      this.autoRetries += 1;
+      if (this.retryTimer != null) window.clearTimeout(this.retryTimer);
+      this.retryTimer = window.setTimeout(() => {
+        this.setState((s) => ({ hasError: false, resetKey: s.resetKey + 1 }));
+      }, AUTO_RETRY_DELAY_MS);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.retryTimer != null) window.clearTimeout(this.retryTimer);
   }
 
   private handleRetry = () => {
-    this.setState((s) => ({ hasError: false, error: null, resetKey: s.resetKey + 1 }));
+    this.autoRetries = 0; // a manual retry earns a fresh batch of auto-retries
+    this.setState((s) => ({ hasError: false, resetKey: s.resetKey + 1 }));
   };
 
   render() {
     if (this.state.hasError) {
+      // Still within the auto-retry budget — show a quiet placeholder instead
+      // of the alarming dialog while we remount behind the scenes.
+      if (this.autoRetries < MAX_AUTO_RETRIES) {
+        return (
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: "#0a0d12", color: "#9793b0", fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12 }}
+          >
+            <span style={{ opacity: 0.8 }}>Reconnecting…</span>
+          </div>
+        );
+      }
       return (
         <div
           className="w-full h-full flex items-center justify-center p-4 overflow-auto"
@@ -71,7 +107,7 @@ export class AppErrorBoundary extends Component<Props, State> {
               className="flex items-center px-2 py-1"
               style={{ background: "linear-gradient(90deg,#000080,#1084d0)", color: "#fff", fontSize: 12, fontWeight: 700 }}
             >
-              {this.props.label ?? "Application"} — Error
+              {this.props.label ?? "Application"} · Error
             </div>
             <div className="p-4" style={{ fontSize: 13, color: "#000" }}>
               <div className="flex items-start gap-3 mb-3">
@@ -99,34 +135,14 @@ export class AppErrorBoundary extends Component<Props, State> {
                 <button
                   onClick={this.handleRetry}
                   className="px-4 py-1"
-                  style={{
-                    background: "#c0c0c0",
-                    border: "2px solid",
-                    borderTopColor: "#ffffff",
-                    borderLeftColor: "#ffffff",
-                    borderRightColor: "#404040",
-                    borderBottomColor: "#404040",
-                    fontSize: 12,
-                    cursor: "pointer",
-                    minWidth: 88,
-                  }}
+                  style={btnStyle}
                 >
                   Try again
                 </button>
                 <button
                   onClick={() => window.location.reload()}
                   className="px-4 py-1"
-                  style={{
-                    background: "#c0c0c0",
-                    border: "2px solid",
-                    borderTopColor: "#ffffff",
-                    borderLeftColor: "#ffffff",
-                    borderRightColor: "#404040",
-                    borderBottomColor: "#404040",
-                    fontSize: 12,
-                    cursor: "pointer",
-                    minWidth: 88,
-                  }}
+                  style={btnStyle}
                 >
                   Refresh page
                 </button>
@@ -138,7 +154,19 @@ export class AppErrorBoundary extends Component<Props, State> {
     }
 
     // The resetKey forces React to discard the old (crashed) subtree and mount
-    // a fresh one when the user clicks "Try again".
+    // a fresh one on retry.
     return <div key={this.state.resetKey} className="w-full h-full">{this.props.children}</div>;
   }
 }
+
+const btnStyle: React.CSSProperties = {
+  background: "#c0c0c0",
+  border: "2px solid",
+  borderTopColor: "#ffffff",
+  borderLeftColor: "#ffffff",
+  borderRightColor: "#404040",
+  borderBottomColor: "#404040",
+  fontSize: 12,
+  cursor: "pointer",
+  minWidth: 88,
+};

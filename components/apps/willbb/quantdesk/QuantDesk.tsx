@@ -18,6 +18,7 @@
 
 import { useState } from "react";
 import { COLORS, FONT_UI, FONT_MONO } from "../OpenBB";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Cockpit from "./Cockpit";
 import Scanner from "./Scanner";
 import StrategyLab from "./StrategyLab";
@@ -54,21 +55,40 @@ export default function QuantDesk({ symbol, setSymbol }: Props) {
       <SubTabBar subTab={subTab} setSubTab={setSubTab} />
 
       <div className="flex-1 min-h-0 overflow-hidden relative">
-        {subTab === "studies" && (
-          <Cockpit symbol={symbol} setSymbol={setSymbol} />
-        )}
-        {subTab === "crosssection" && <Scanner onPickSymbol={setSymbol} />}
-        {subTab === "alphalab" && (
-          <StrategyLab
-            symbol={symbol}
-            setSymbol={setSymbol}
-            onBacktestComplete={setLastBacktest}
-            onTradesEmitted={(trades) => setPaperTrades((prev) => [...prev, ...trades])}
-          />
-        )}
-        {subTab === "attribution" && (
-          <RiskDashboard symbol={symbol} setSymbol={setSymbol} lastBacktest={lastBacktest} />
-        )}
+        {/* Each panel runs heavy quant math on live bars; if one throws on a
+            degenerate/edge dataset, contain it to this panel rather than the
+            whole terminal. Keyed on subTab so switching panels clears it. */}
+        <ErrorBoundary
+          key={subTab}
+          label={`quant:${subTab}`}
+          fallback={
+            <div
+              className="px-[16px] py-[16px]"
+              style={{ color: COLORS.textDim, fontFamily: FONT_MONO, fontSize: 12, lineHeight: 1.6 }}
+            >
+              This panel couldn&apos;t compute for{" "}
+              <span style={{ color: COLORS.text }}>{symbol}</span>. The feed may
+              be rate-limited or missing enough history. Try another panel or
+              symbol.
+            </div>
+          }
+        >
+          {subTab === "studies" && (
+            <Cockpit symbol={symbol} setSymbol={setSymbol} />
+          )}
+          {subTab === "crosssection" && <Scanner onPickSymbol={setSymbol} />}
+          {subTab === "alphalab" && (
+            <StrategyLab
+              symbol={symbol}
+              setSymbol={setSymbol}
+              onBacktestComplete={setLastBacktest}
+              onTradesEmitted={(trades) => setPaperTrades((prev) => [...prev, ...trades])}
+            />
+          )}
+          {subTab === "attribution" && (
+            <RiskDashboard symbol={symbol} setSymbol={setSymbol} lastBacktest={lastBacktest} />
+          )}
+        </ErrorBoundary>
       </div>
 
       <PaperBlotter
