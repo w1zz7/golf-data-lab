@@ -131,6 +131,14 @@ export default function Cockpit({
   const [mktResp, setMktResp] = useState<ChartResp | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [indicators, setIndicators] = useState<Record<IndicatorId, IndicatorState>>(DEFAULTS);
+  // Bar the cursor is currently over (emitted by QuantChart). When set, the
+  // chart header shows that bar's date + OHLC instead of the latest bar's,
+  // turning the static legend into a live readout that follows the crosshair.
+  const [hoveredBar, setHoveredBar] = useState<Bar | null>(null);
+  // Fullscreen mode for the chart: when true, the entire chart pane (controls
+  // + canvas) renders in a fixed-position overlay covering the viewport so the
+  // user can inspect the chart at maximum size.
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const abortRef = useRef<AbortController | null>(null);
   // Counter that the manual refresh button bumps. We pass &bypass=1 + skip
   // the client SWR cache only when explicitly refreshing — range button
@@ -141,6 +149,18 @@ export default function Cockpit({
   const [rangeNonce, setRangeNonce] = useState<number>(0);
   const rangeNonceRef = useRef<number>(0);
   rangeNonceRef.current = rangeNonce;
+
+  // Esc exits chart fullscreen, matching native fullscreen UX. Listener only
+  // attaches while fullscreen is active so we don't intercept the global Esc
+  // when the chart is inline.
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
   // Separate flag for the next fetch to bypass the client+server cache. Set
   // by the manual refresh button (not implemented on this panel yet — left
   // here as a hook for when we add one). Resets after one use.
@@ -382,8 +402,16 @@ export default function Cockpit({
       className="h-full flex flex-col md:flex-row overflow-y-auto md:overflow-hidden willbb-noscrollbar"
       style={{ background: COLORS.bg, fontFamily: FONT_UI }}
     >
-      {/* Main pane */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main pane. When fullscreen, escapes the row layout into a
+          viewport-covering overlay so the chart can use every available pixel. */}
+      <div
+        className={
+          isFullscreen
+            ? "fixed inset-0 z-[100] flex flex-col min-w-0"
+            : "flex-1 flex flex-col min-w-0"
+        }
+        style={isFullscreen ? { background: COLORS.bg } : undefined}
+      >
         {/* Symbol + price + range bar */}
         <div
           className="flex items-center gap-[12px] md:gap-[18px] flex-wrap px-[14px] py-[8px] shrink-0"
@@ -457,13 +485,47 @@ export default function Cockpit({
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-center gap-[14px] text-[10px]" style={{ fontFamily: FONT_MONO, color: COLORS.textFaint }}>
-            <span>O <span style={{ color: COLORS.text }}>{lastBar?.o.toFixed(2) ?? "-"}</span></span>
-            <span>H <span style={{ color: COLORS.up }}>{lastBar?.h.toFixed(2) ?? "-"}</span></span>
-            <span>L <span style={{ color: COLORS.down }}>{lastBar?.l.toFixed(2) ?? "-"}</span></span>
-            <span>V <span style={{ color: COLORS.text }}>{lastBar?.v?.toLocaleString() ?? "-"}</span></span>
-            {loading && <span style={{ color: COLORS.brand }}>loading…</span>}
-          </div>
+          {(() => {
+            // Live OHLC legend: follows the cursor when hovering, else shows
+            // the most recent bar. Adds C and the bar's date so the reader
+            // always knows exactly which bar they're looking at.
+            const displayBar = hoveredBar ?? lastBar;
+            const dateLabel = hoveredBar
+              ? new Date(hoveredBar.t * 1000).toISOString().slice(0, 10)
+              : null;
+            return (
+              <div className="ml-auto flex items-center gap-[12px] text-[10px] flex-wrap" style={{ fontFamily: FONT_MONO, color: COLORS.textFaint }}>
+                {dateLabel && (
+                  <span style={{ color: COLORS.text, fontWeight: 600, letterSpacing: "0.04em" }}>
+                    {dateLabel}
+                  </span>
+                )}
+                <span>O <span style={{ color: COLORS.text }}>{displayBar?.o.toFixed(2) ?? "-"}</span></span>
+                <span>H <span style={{ color: COLORS.up }}>{displayBar?.h.toFixed(2) ?? "-"}</span></span>
+                <span>L <span style={{ color: COLORS.down }}>{displayBar?.l.toFixed(2) ?? "-"}</span></span>
+                <span>C <span style={{ color: COLORS.text }}>{displayBar?.c.toFixed(2) ?? "-"}</span></span>
+                <span>V <span style={{ color: COLORS.text }}>{displayBar?.v?.toLocaleString() ?? "-"}</span></span>
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen((f) => !f)}
+                  title={isFullscreen ? "Exit fullscreen (Esc)" : "Expand chart to fullscreen"}
+                  style={{
+                    background: isFullscreen ? COLORS.brandSoft : "transparent",
+                    border: "1px solid " + (isFullscreen ? COLORS.brand : COLORS.borderSoft),
+                    color: COLORS.text,
+                    padding: "3px 9px",
+                    fontSize: 10,
+                    cursor: "pointer",
+                    letterSpacing: "0.08em",
+                    fontFamily: FONT_MONO,
+                  }}
+                >
+                  {isFullscreen ? "⤢ EXIT" : "⛶ FULLSCREEN"}
+                </button>
+                {loading && <span style={{ color: COLORS.brand }}>loading…</span>}
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex-none overflow-visible md:flex-1 md:min-h-0 md:overflow-auto">
@@ -480,6 +542,7 @@ export default function Cockpit({
             livePrevClose={livePrevClose}
             watermark={symbol.toUpperCase()}
             marketState={liveQuote?.marketState ?? null}
+            onHoverBar={setHoveredBar}
           />
 
           {/* Realized vol panel */}

@@ -27,7 +27,7 @@ import type { ChartPoint } from "./PriceChart";
 import TradingViewChart, { type TVInterval, type TVRange } from "./TradingViewChart";
 import BootScreen from "./BootScreen";
 import { SourceBadge, type DataSource, aggregateSource } from "./SourceBadge";
-import { prefetchChart } from "@/lib/chartCache";
+import { prefetchChart, fetchChart } from "@/lib/chartCache";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Lazy-loaded heavy panels — they don't ship in the Markets-tab initial chunk.
@@ -122,10 +122,14 @@ const RANGES = [
 
 // Bloomberg/terminal-inspired dark palette tuned for tabular numeric data.
 export const COLORS = {
-  bg: "#151518", // --bg-secondary
-  panel: "#212124", // --bg-primary
-  panelAlt: "#1f1e23", // --bg-tertiary
-  panelDeep: "#24242a", // --bg-quartary
+  // True-black surfaces for the terminal chrome (was warm grays #151518 /
+  // #212124 etc.). Panels now read as solid black with depth provided by the
+  // border + textDim accents — closer to a Bloomberg terminal than the
+  // gray cards we had before.
+  bg: "#000000", // --bg-secondary
+  panel: "#0a0a0a", // --bg-primary — a hair above pure black for raised feel
+  panelAlt: "#050505", // --bg-tertiary
+  panelDeep: "#101013", // --bg-quartary — slightly elevated for sub-headers
   border: "#46464F", // --border-color
   borderSoft: "rgba(70,70,79,0.5)", // --button-secondary-border
   text: "#FFFFFF", // --text-primary
@@ -236,6 +240,11 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
   const [watchQuotes, setWatchQuotes] = useState<Quote[]>([]);
   const [chart, setChart] = useState<ChartResponse | null>(null);
   const [loadingChart, setLoadingChart] = useState(false);
+  // True once the focused symbol's default 1y/1d bars are in the chart cache.
+  // Gating the boot reveal on this means the Research/Studies pane that the
+  // user lands on (Cockpit + QuantChart) renders with real bars on first
+  // paint, not an empty pane that fills in a beat later.
+  const [chartReady, setChartReady] = useState<boolean>(false);
   // `slowLoading` flips true after the chart fetch has been pending for
   // ~1.5 s. We show a subtle "first load can take a few seconds" notice
   // so the user knows the wait is the upstream Yahoo round-trip, not a
@@ -250,7 +259,6 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
     return () => window.clearTimeout(id);
   }, [loadingChart]);
   const [chartErr, setChartErr] = useState<string | null>(null);
-  const [degraded, setDegraded] = useState<string | null>(null);
   const [now, setNow] = useState<Date>(() => new Date());
   const [lastTick, setLastTick] = useState<number>(0);
   // Refresh nonce - bump this and every poll fires immediately.
@@ -294,6 +302,25 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
       });
       prefetchChart("^GSPC", "1mo", "1d");
     });
+  }, [focused]);
+
+  // Track when the focused symbol's default 1y/1d bars are actually loaded —
+  // this is the chart the Cockpit/Studies pane paints first, so the boot gate
+  // needs to wait on it. fetchChart() de-dupes against the prefetch above, so
+  // this isn't a second network round-trip — it just resolves when the same
+  // in-flight request completes.
+  useEffect(() => {
+    let cancelled = false;
+    setChartReady(false);
+    fetchChart(focused, "1y", "1d").then((data) => {
+      if (cancelled) return;
+      if (data && Array.isArray(data.points) && data.points.length > 0) {
+        setChartReady(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [focused]);
 
   // Lightweight terminal-open prewarm. The previous version aggressively
@@ -357,14 +384,8 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
         const data = (await res.json()) as QuotesResponse;
         if (ctrl.signal.aborted) return;
         setStripQuotes(data.quotes ?? []);
-        if (data.degraded) {
-          setDegraded(
-            data.message ??
-              `Upstream rate-limited. Showing snapshot for ${data.quotes?.length ?? 0} symbol(s) until live feed returns.`
-          );
-        } else {
-          setDegraded(null);
-        }
+        // Data-source attribution (live vs cached snapshot) is conveyed by the
+        // SourceBadge in the header rather than a top-of-terminal banner.
         setLastTick(Date.now());
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") return;
@@ -487,10 +508,14 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
     >
       {!booted && (
         <BootScreen
-          // Hold the boot until the dashboard's headline data (the index
-          // ticker strip) has actually loaded — the user never lands on a
-          // half-populated terminal. Capped by BootScreen's internal timeout.
-          dataReady={stripQuotes.length > 0}
+          // Hold the boot until ALL of the dashboard's first-paint data is
+          // actually loaded: the index ticker strip, the watchlist quotes
+          // (Markets tab), and the focused symbol's 1y chart bars (the chart
+          // the Research/Studies pane paints first). The user never lands on
+          // a half-populated terminal. Capped by BootScreen's internal
+          // maxWaitMs so it can never hang forever on a stalled feed.
+          dataReady={stripQuotes.length > 0 && watchQuotes.length > 0 && chartReady}
+          maxWaitMs={10000}
           onComplete={() => {
             setBooted(true);
             // Persist the boot so subsequent terminal opens (e.g., user
@@ -517,19 +542,6 @@ export default function WillBBTerminal({ window: _w }: { window: WindowState }) 
         refreshing={refreshing}
       />
       <TickerStrip quotes={stripQuotes} symbols={INDEX_STRIP} />
-      {degraded && (
-        <div
-          className="px-[14px] py-[6px] text-[12px] shrink-0"
-          style={{
-            background: COLORS.brandSoft,
-            borderBottom: "1px solid " + COLORS.brand,
-            color: COLORS.text,
-            fontFamily: FONT_UI,
-          }}
-        >
-          ⚠ {degraded}
-        </div>
-      )}
       <TabBar tab={tab} setTab={setTab} />
 
       <div className="flex-1 min-h-0 overflow-hidden">

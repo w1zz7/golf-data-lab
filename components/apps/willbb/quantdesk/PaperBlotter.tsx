@@ -1,8 +1,10 @@
 "use client";
 
 /**
- * Session-scoped paper trade blotter. Trades emitted by Strategy Lab
- * runs append here; the drawer can be toggled open/closed from any sub-tab.
+ * Session-scoped Paper Trading drawer. Every trade emitted by a Strategy Lab
+ * backtest appends here, so the user can see every entry / exit the strategy
+ * fired without leaving the chart. The drawer is collapsed by default and
+ * toggles open from any sub-tab; running a fresh backtest does not reset it.
  */
 
 import { COLORS, FONT_MONO, FONT_UI } from "../OpenBB";
@@ -59,7 +61,7 @@ export default function PaperBlotter({
       >
         <span>
           {open ? "▾" : "▸"}{" "}
-          <span style={{ color: COLORS.text }}>PAPER BLOTTER</span> ·{" "}
+          <span style={{ color: COLORS.text }}>PAPER TRADING</span> ·{" "}
           {trades.length} trades · {openCount} open ·{" "}
           <span style={{ color: totalPnl >= 0 ? COLORS.up : COLORS.down }}>
             {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(0)}
@@ -85,15 +87,43 @@ export default function PaperBlotter({
           {trades.length === 0 ? (
             <div
               style={{
-                padding: "12px 14px",
-                fontSize: 11,
-                color: COLORS.textFaint,
+                padding: "14px 16px",
+                fontSize: 12,
+                color: COLORS.textDim,
                 fontFamily: FONT_MONO,
+                lineHeight: 1.6,
               }}
             >
-              No trades yet. Run a strategy in Strategy Lab to populate the blotter.
+              <div style={{ color: COLORS.text, fontWeight: 600, marginBottom: 6, fontSize: 12, letterSpacing: "0.04em" }}>
+                No paper trades yet.
+              </div>
+              <div>
+                Open the <span style={{ color: COLORS.brand }}>Alpha Lab</span> sub-tab,
+                pick a preset (or edit the code), and click{" "}
+                <span style={{ color: COLORS.brand }}>▶ RUN BACKTEST</span>.
+                Every entry and exit the strategy fires will append here as a
+                paper trade with simulated P&amp;L.
+              </div>
             </div>
           ) : (
+            <>
+              {/* Inline guide so a first-time visitor immediately understands
+                  what this drawer is and how the rows are read. */}
+              <div
+                style={{
+                  padding: "8px 14px",
+                  fontSize: 10,
+                  color: COLORS.textFaint,
+                  fontFamily: FONT_MONO,
+                  borderBottom: "1px solid " + COLORS.border,
+                  lineHeight: 1.5,
+                }}
+              >
+                Paper trades emitted by your Strategy Lab backtests.{" "}
+                <span style={{ color: COLORS.up }}>LONG</span> = bought at entry, sold at exit ·{" "}
+                <span style={{ color: COLORS.down }}>SHORT</span> = sold at entry, bought at exit ·{" "}
+                P&amp;L is post-commission.
+              </div>
             <table style={{ width: "100%", fontSize: 11, fontFamily: FONT_MONO }}>
               <thead>
                 <tr style={{ color: COLORS.textFaint, borderBottom: "1px solid " + COLORS.border }}>
@@ -132,6 +162,7 @@ export default function PaperBlotter({
                 ))}
               </tbody>
             </table>
+            </>
           )}
         </div>
       )}

@@ -66,6 +66,10 @@ export interface QuantChartProps {
   watermark?: string | null;
   marketState?: string | null;
   hollowUp?: boolean;
+  /** Fired whenever the user hovers a different bar (or leaves the chart).
+   *  Lets the parent's header re-render with the hovered bar's OHLC + date
+   *  instead of just the latest bar, so the chart shows real-time detail. */
+  onHoverBar?: (bar: Bar | null) => void;
 }
 
 /* ---------- helpers ---------- */
@@ -313,6 +317,7 @@ export default function QuantChart({
   watermark = null,
   marketState = null,
   hollowUp = true,
+  onHoverBar,
 }: QuantChartProps) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [hoverPx, setHoverPx] = useState<{ x: number; y: number } | null>(null);
@@ -630,6 +635,7 @@ export default function QuantChart({
     client: { x: number; y: number };
   } | null>(null);
   const hoverRafRef = useRef<number | null>(null);
+  const lastHoverEmitRef = useRef<number | null>(null);
   const flushHover = useCallback(() => {
     hoverRafRef.current = null;
     const p = pendingHoverRef.current;
@@ -638,7 +644,14 @@ export default function QuantChart({
     setHoverIdx(p.idx);
     setHoverPx(p.px);
     setHoverClient(p.client);
-  }, []);
+    // Emit the hovered bar to the parent (Cockpit's header reads this to show
+    // OHLC + date for the bar under the cursor instead of always the latest).
+    // Dedupe so we don't re-fire while the cursor stays on the same bar.
+    if (onHoverBar && lastHoverEmitRef.current !== p.idx) {
+      lastHoverEmitRef.current = p.idx;
+      onHoverBar(bars[p.idx] ?? null);
+    }
+  }, [onHoverBar, bars]);
   const scheduleHover = useCallback(
     (idx: number, px: { x: number; y: number }, client: { x: number; y: number }) => {
       pendingHoverRef.current = { idx, px, client };
@@ -742,12 +755,13 @@ export default function QuantChart({
         background: COLORS.panel,
         position: "relative",
         height,
-        // Always show the grab cursor — communicates "this chart is
-        // draggable" the moment the user hovers, matching TradingView's
-        // affordance. Previously we showed `crosshair` until the user had
-        // already entered a custom view (zoomed/panned), which hid the
-        // primary interaction from first-time visitors.
-        cursor: "grab",
+        // Crosshair cursor while hovering so the OS pointer's hot-spot sits
+        // exactly on top of the rendered crosshair line (a `+` whose center
+        // is the click point, instead of a hand icon whose hot-spot reads
+        // visually offset from the line). The drag handler swaps to
+        // `grabbing` on mousedown, so the pan affordance still kicks in the
+        // instant the user starts dragging.
+        cursor: "crosshair",
         outline: "none",
         // Avoid touch scroll hijacking the page when the user pans the chart.
         touchAction: "none",
@@ -756,6 +770,10 @@ export default function QuantChart({
         setHoverIdx(null);
         setHoverPx(null);
         setHoverClient(null);
+        if (onHoverBar && lastHoverEmitRef.current != null) {
+          lastHoverEmitRef.current = null;
+          onHoverBar(null);
+        }
       }}
       onDoubleClick={(e) => {
         e.preventDefault();
@@ -797,7 +815,11 @@ export default function QuantChart({
         const xRel = e.clientX - rect.left;
         const localIdx = Math.max(0, Math.min(visBars.length - 1, Math.floor((xRel - PADDING_LEFT) / dx)));
         const absUnderCursor = viewStart + localIdx;
-        const factor = e.deltaY > 0 ? 1.15 : 1 / 1.15;
+        // Gentler wheel-zoom step (was 1.15 = 15% per tick, now 1.07 = ~7%).
+        // Trackpad inertial scroll on macOS fires many wheel events back-to-
+        // back, so the old 15% rate made the chart whiplash through zoom
+        // levels. 7% gives the user a chance to land on the level they want.
+        const factor = e.deltaY > 0 ? 1.07 : 1 / 1.07;
         const currentCount = visibleBarsState ?? bars.length;
         const newCount = Math.max(20, Math.min(bars.length, Math.round(currentCount * factor)));
         const cursorFrac = newCount > 0 ? localIdx / Math.max(1, currentCount - 1) : 0;

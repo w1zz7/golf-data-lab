@@ -169,19 +169,6 @@ export default function EquityResearch({
     }, 700);
   };
 
-  // Profile module doubles as a canary for "is upstream serving this IP?"
-  // When Yahoo is rate-limiting, our seed dictionary covers the popular
-  // tickers and Profile/Statistics still populate (with `source: "seed"`).
-  // Show a soft note when we're on seed; show a hard banner only when even
-  // seed didn't catch the ticker.
-  const canary = useEquityModule<{
-    symbol?: string;
-    longName?: string | null;
-    source?: string;
-  }>(symbol, "profile");
-  const upstreamDown = !!canary.error && !canary.data;
-  const usingSeed = canary.data?.source === "seed";
-
   return (
     <EquityRefreshContext.Provider value={nonce}>
     <div className="flex flex-col h-full" style={{ background: COLORS.bg }}>
@@ -191,37 +178,11 @@ export default function EquityResearch({
         onRefresh={refresh}
         refreshing={refreshing}
       />
-      {upstreamDown && (
-        <div
-          className="px-[14px] py-[6px] text-[12px] shrink-0"
-          style={{
-            background: "rgba(0,136,204,0.10)",
-            borderBottom: "1px solid " + COLORS.brand,
-            color: COLORS.text,
-            fontFamily: FONT_UI,
-          }}
-        >
-          ⚠ {symbol} isn&apos;t in our snapshot dictionary and Yahoo is
-          rate-limiting this server. Try a major ticker (NVDA, AAPL, MSFT,
-          GOOG, AMZN, META, TSLA, AMD, INTC, HOOD, BMNR) or come back when
-          the cooldown clears. The TradingView chart on Technicals stays
-          live regardless.
-        </div>
-      )}
-      {usingSeed && !upstreamDown && (
-        <div
-          className="px-[14px] py-[5px] text-[11px] shrink-0"
-          style={{
-            background: COLORS.panelDeep,
-            borderBottom: "1px solid " + COLORS.borderSoft,
-            color: COLORS.textDim,
-            fontFamily: FONT_UI,
-          }}
-        >
-          Showing snapshot data for {symbol} - upstream rate-limited from
-          this server. Numbers refresh once the cooldown clears.
-        </div>
-      )}
+      {/* Data source (live vs cached snapshot) is conveyed unobtrusively by
+          the per-view SourceBadge; we deliberately don't render a top-of-view
+          rate-limit banner because the data renders normally either way and
+          the banner only created noise. Truly unknown symbols still fall into
+          the per-sub-tab ErrorBoundary's "couldn't render" pane. */}
       <SubTabBar sub={sub} setSub={setSub} />
       <div className="flex-1 min-h-0 overflow-y-auto">
         {/* Each view parses a different upstream module shape; if one throws on
